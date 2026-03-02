@@ -116,15 +116,15 @@ export const projects = [
 
 // ─── Skills ─────────────────────────────────────────────────
 export const skills = [
-  { name: "HTML/CSS", level: 95, category: "frontend" },
+  { name: "HTML/CSS", level: 90, category: "frontend" },
   { name: "Tailwind CSS", level: 90, category: "frontend" },
   { name: "JavaScript (ES6+)", level: 95, category: "frontend" },
-  { name: "React", level: 92, category: "frontend" },
-  { name: "Next.js", level: 85, category: "frontend" },
+  { name: "React", level: 80, category: "frontend" },
+  { name: "Next.js", level: 84, category: "frontend" },
   //   { name: "TypeScript",         level: 80, category: "frontend"  },
-  { name: "Node.js", level: 88, category: "backend" },
-  { name: "Express.js", level: 87, category: "backend" },
-  { name: "REST APIs", level: 90, category: "backend" },
+  { name: "Node.js", level: 60, category: "backend" },
+  { name: "Express.js", level: 70, category: "backend" },
+  { name: "REST APIs", level: 75, category: "backend" },
   { name: "MongoDB", level: 85, category: "database" },
   { name: "Firebase", level: 78, category: "database" },
   { name: "Vercel", level: 85, category: "tools" },

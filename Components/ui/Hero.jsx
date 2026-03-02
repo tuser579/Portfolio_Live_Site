@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Download, Github, Linkedin, Twitter, Facebook } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import profilePhoto from "../../public/Gemini_Generated_Image_rjdcorrjdcorrjdc.png";
+import profilePhoto from "../../public/Gemini_Generated_Image_kkbq5akkbq5akkbq.png";
 
 const Hero = () => {
     return (
@@ -69,7 +69,7 @@ const Hero = () => {
                             transition={{ delay: 0.5 }}
                             className="text-muted-foreground max-w-lg mb-8 leading-relaxed"
                         >
-                            I build web applications using React, Node.js, Express, and MongoDB.
+                            I build web applications using React, Next.js, Node.js, Express, and MongoDB.
                             Passionate about clean code and pixel-perfect UIs.
                         </motion.p>
 
