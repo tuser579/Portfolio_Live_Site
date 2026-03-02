@@ -62,7 +62,7 @@ const Contact = () => {
                                     {[
                                         { icon: Mail,   label: YOUR_EMAIL,         href: `mailto:${YOUR_EMAIL}`                       },
                                         { icon: Phone,  label: YOUR_PHONE,          href: `tel:${YOUR_PHONE}`                          },
-                                        { icon: MapPin, label: "Dhaka, Bangladesh", href: "https://maps.google.com/?q=Dhaka,Bangladesh" },
+                                        { icon: MapPin, label: "Daffodil Smart City (DSC), Birulia, Dhaka-1216, Bangladesh", href: "https://maps.google.com/?q=Dhaka,Bangladesh" },
                                     ].map(({ icon: Icon, label, href }) => (
                                         <a
                                             key={label}

@@ -26,15 +26,16 @@ const About = () => {
             <p className="text-foreground/90 leading-relaxed text-base sm:text-lg">
               I'm a passionate{" "}
               <span className="text-primary font-semibold">MERN Stack Developer</span>{" "}
-              who finds pure joy in solving complex problems through code. My journey into programming started with a simple curiosity—how do websites actually work?—and quickly evolved into a deep love for building things that live on the internet. Whether it's debugging a tricky issue or architecting a scalable solution, I genuinely enjoy every challenge that comes my way.
+              who loves solving complex problems through code. What started as curiosity about how websites work evolved into a deep passion for building things on the internet—from debugging tricky issues to architecting scalable solutions.
             </p>
 
             <p className="text-foreground/90 leading-relaxed text-sm sm:text-base">
-              I specialize in building full-stack applications using React, Next.js, Node.js, Express, and MongoDB. What drives me is the ability to think critically about problems and craft elegant solutions. I believe that good code isn't just about making things work—it's about making them work efficiently, cleanly, and in a way that others can build upon. I thrive on those "aha!" moments when a complex problem finally clicks into place.
+              I specialize in full-stack applications with React, Next.js, Node.js, Express, and MongoDB. I thrive on thinking critically about problems and crafting elegant, efficient code that others can build upon. Those{" "}
+              <span className="text-primary font-medium">"aha!" moments</span> when everything clicks? That's what drives me.
             </p>
 
             <p className="text-foreground/90 leading-relaxed text-sm sm:text-base">
-              Beyond the screen, my life is balanced between technology and the outdoors. I'm passionate about farming—there's something grounding about working with the land and watching things grow. When I'm not in the fields, you'll find me on a cricket field, where strategy and teamwork mirror the problem-solving I love in coding. I believe that whether you're debugging code, tending to crops, or chasing a cricket ball, patience and persistence are what lead to the best outcomes.
+              Outside coding, you'll find me farming—there's something grounding about watching things grow—or on the cricket field, where strategy and teamwork mirror the problem-solving I love. Whether debugging, tending crops, or chasing a cricket ball, patience and persistence lead to the best outcomes.
             </p>
 
             {/* ── Icon Cards ── */}

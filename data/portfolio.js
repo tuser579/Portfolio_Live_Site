@@ -118,19 +118,19 @@ export const projects = [
 export const skills = [
   { name: "HTML/CSS", level: 90, category: "frontend" },
   { name: "Tailwind CSS", level: 90, category: "frontend" },
-  { name: "JavaScript (ES6+)", level: 95, category: "frontend" },
+  { name: "JavaScript (ES6+)", level: 80, category: "frontend" },
   { name: "React", level: 80, category: "frontend" },
-  { name: "Next.js", level: 84, category: "frontend" },
+  { name: "Next.js", level: 70, category: "frontend" },
   //   { name: "TypeScript",         level: 80, category: "frontend"  },
   { name: "Node.js", level: 60, category: "backend" },
   { name: "Express.js", level: 70, category: "backend" },
   { name: "REST APIs", level: 75, category: "backend" },
   { name: "MongoDB", level: 85, category: "database" },
-  { name: "Firebase", level: 78, category: "database" },
+  { name: "Firebase", level: 60, category: "database" },
   { name: "Vercel", level: 85, category: "tools" },
   { name: "Netlify", level: 80, category: "tools" },
-  { name: "Git/GitHub", level: 90, category: "tools" },
-  { name: "VS Code", level: 92, category: "tools" },
+  { name: "Git/GitHub", level: 70, category: "tools" },
+  { name: "VS Code", level: 82, category: "tools" },
 ];
 
 // ─── Experience ──────────────────────────────────────────────
@@ -165,16 +165,9 @@ export const experiences = [
 export const education = [
   {
     degree: "Bachelor of Science in Computer Science",
-    institution: "Daffodil International University",
+    institution: "Daffodil International University (DIU)",
     duration: "2024 — Present",
     description:
       "Focused on software engineering, data structures, and web technologies. Graduated with honors.",
-  },
-  {
-    degree: "Higher Secondary Certificate (HSC)",
-    institution: "Shah Mokhdum College",
-    duration: "2020 — 2021",
-    description:
-      "Science stream with a focus on Mathematics and Computer Science.",
   },
 ];
