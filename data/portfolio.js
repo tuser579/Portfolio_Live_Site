@@ -1,6 +1,6 @@
-import project1Img from "../public/Screenshot_2026_03_02_103034 (2).png";
+import project1Img from "../public/Gemini_Generated_Image_lh7y8olh7y8olh7y.png";
 import project2Img from "../public/Gemini_Generated_Image_hgtlmvhgtlmvhgtl.png";
-import project3Img from "../public/vercel.svg";
+import project3Img from "../public/Gemini_Generated_Image_aak1x6aak1x6aak1.png";
 
 // ─── Projects ───────────────────────────────────────────────
 export const projects = [
@@ -18,7 +18,8 @@ export const projects = [
       "Express.js",
       "MongoDB",
       "Tailwind CSS",
-      "JWT Authentication",
+      "Firebase Authentication",
+      "JWT Authorization",
       "React Query",
       "Framer Motion",
       "React Leaflet",
@@ -54,10 +55,11 @@ export const projects = [
       "Node.js",
       "Express.js",
       "MongoDB",
-      "JWT Authentication",
+      "Firebase Authentication",
+      "JWT Authorization",
     ],
-    liveLink: "https://rentwheels-demo.vercel.app/",
-    githubLink: "https://github.com/username/rentwheels",
+    liveLink: "https://react-firebase-auth-defdc.web.app/",
+    githubLink: "https://github.com/tuser579/Client_Assignment_10",
     challenges: [
       "Implementing real-time vehicle availability updates to prevent double bookings",
       "Integrating secure payment processing with Stripe",
@@ -69,6 +71,45 @@ export const projects = [
       "Implement a loyalty program with rewards and discounts",
       "Add multi-language support for international users",
       "Integrate AI-powered vehicle recommendations",
+    ],
+  },
+  {
+    id: "skillswap",
+    name: "SkillSwap – Local Skill Exchange Platform",
+    image: project3Img, 
+    shortDescription:
+      "A community-driven platform to share and learn skills locally. Offer lessons, find learning opportunities, and connect with others nearby.",
+    description:
+      "SkillSwap is a local skill exchange platform designed to help people share and learn skills within their community. Users can offer lessons, find learning opportunities, and connect with others nearby, making learning more personal, affordable, and community-driven. The platform features a comprehensive authentication system, public and private routes, a dynamic navbar, and a protected footer. It allows users to browse popular skills like Guitar Lessons, Python Programming, and Web Design, and connect with top-rated providers.",
+    techStack: [
+      "React",
+      "Vite",
+      "Tailwind CSS",
+      "DaisyUI",
+      "React Router",
+      "Firebase Authentication",
+      "Swiper.js",
+      "React Hot Toast",
+      "React Toastify",
+      "Animate.css",
+      "Lucide React",
+    ],
+    liveLink: "https://skillswaptuser579.netlify.app",
+    githubLink: "https://github.com/tuser579/Assignment_9_SkillSwap",
+    challenges: [
+      "Implementing a secure and seamless authentication system with Firebase",
+      "Creating dynamic and private routes to protect user-specific content",
+      "Building a responsive and interactive UI with Tailwind CSS and DaisyUI that works across all devices",
+      "Integrating smooth animations and transitions using Animate.css and Swiper.js for a modern user experience",
+      "Managing application state effectively across different routes and components",
+    ],
+    improvements: [
+      "Add a real-time messaging system for users to communicate directly",
+      "Implement a review and rating system for skills and providers",
+      "Create a user profile page with skill listings and past exchanges",
+      "Add a search and filter functionality to find skills by category or location",
+      "Integrate a calendar for scheduling lessons or sessions",
+      "Implement a points or reputation system to encourage positive contributions",
     ],
   },
 ];
