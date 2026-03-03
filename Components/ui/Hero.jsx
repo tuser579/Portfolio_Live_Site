@@ -480,7 +480,7 @@ const ResumeModal = ({ onClose }) => (
                             Close
                         </button>
                         <DownloadButton
-                            label="Download PDF" iconSize="w-4 h-4"
+                            label="Download" iconSize="w-4 h-4"
                             className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-primary-foreground transition-all hover-lift glow disabled:opacity-60 disabled:cursor-not-allowed"
                             style={{ backgroundImage: "var(--gradient-primary)" }}
                         />
