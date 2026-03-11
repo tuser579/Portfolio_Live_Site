@@ -10,288 +10,337 @@ import Link from "next/link";
 import { useState } from "react";
 import profilePhoto from "../../public/Gemini_Generated_Image_kkbq5akkbq5akkbq.png";
 import { projects } from "../../data/portfolio";
+import { certifications } from "../../data/portfolio";
 
 // ─────────────────────────────────────────────────────────────
 //  PDF GENERATOR — all links are clickable via doc.link()
 // ─────────────────────────────────────────────────────────────
+
+// update resume
 async function generateAndDownloadPDF() {
     const { default: jsPDF } = await import("jspdf");
 
     const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
-    const W        = 210;
-    const MARGIN   = 18;
-    const CW       = W - MARGIN * 2;   // content width
-    let   y        = 14;
+    const W = 210;
+    const MARGIN = 20;
+    const CW = W - MARGIN * 2;
+    let y = 20;
 
-    // colours
-    const PRIMARY  = [14,  165, 233];
-    const DARK     = [15,  23,  42];
-    const MID      = [51,  65,  85];
-    const MUTED    = [100, 116, 139];
-    const LIGHT_BG = [240, 249, 255];
-    const BORDER   = [186, 230, 253];
+    const BLACK = [0, 0, 0];
+    const DARK = [30, 30, 30];
+    const MID = [60, 60, 60];
+    const MUTED = [110, 110, 110];
+    const LINK = [10, 100, 200];   // blue for clickable links only
 
-    // ── helpers ───────────────────────────────────────────────
+    // ── Page-break guard ─────────────────────────────────────
     const checkPage = (need = 10) => {
-        if (y + need > 280) { doc.addPage(); y = 14; }
+        if (y + need > 277) { doc.addPage(); y = 20; }
     };
 
-    const hLine = (color = BORDER, thick = 0.3) => {
-        doc.setDrawColor(...color);
-        doc.setLineWidth(thick);
+    // ── Thin full-width rule ──────────────────────────────────
+    const hRule = () => {
+        doc.setDrawColor(...MUTED);
+        doc.setLineWidth(0.25);
         doc.line(MARGIN, y, W - MARGIN, y);
-        y += 3;
-    };
-
-    const sectionTitle = (title) => {
-        checkPage(12);
         y += 4;
-        doc.setFontSize(7.5);
+    };
+
+    // ── Section heading ───────────────────────────────────────
+    const sectionTitle = (title) => {
+        checkPage(14);
+        y += 5;
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(...PRIMARY);
-        doc.text(title, MARGIN, y);
-        y += 1.5;
-        hLine(PRIMARY, 0.6);
+        doc.setFontSize(10);
+        doc.setTextColor(...BLACK);
+        doc.text(title.toUpperCase(), MARGIN, y);
+        y += 2;
+        hRule();
     };
 
-    // ── clickable link helper ─────────────────────────────────
-    // Draws underlined coloured text AND registers a PDF hyperlink
-    const addLink = (text, url, x, linkY, fontSize, align = "left") => {
-        doc.setFontSize(fontSize);
+    // ── Clickable hyperlink (blue, underlined, PDF annotation) ─
+    const addLink = (text, url, x, linkY, fontSize) => {
         doc.setFont("helvetica", "normal");
-        doc.setTextColor(...PRIMARY);
-
-        let tx = x;
-        if (align === "center") {
-            const tw = doc.getTextWidth(text);
-            tx = x - tw / 2;
-        } else if (align === "right") {
-            const tw = doc.getTextWidth(text);
-            tx = x - tw;
-        }
-
-        doc.text(text, tx, linkY, { align });
-
-        // underline
+        doc.setFontSize(fontSize);
+        doc.setTextColor(...LINK);
+        doc.text(text, x, linkY);
         const tw = doc.getTextWidth(text);
-        doc.setDrawColor(...PRIMARY);
+        doc.setDrawColor(...LINK);
         doc.setLineWidth(0.2);
-        doc.line(tx, linkY + 0.6, tx + tw, linkY + 0.6);
-
-        // PDF hyperlink annotation (height ≈ fontSize * 0.35mm)
+        doc.line(x, linkY + 0.8, x + tw, linkY + 0.8);
         const lh = fontSize * 0.35;
-        doc.link(tx, linkY - lh, tw, lh + 1, { url });
+        doc.link(x, linkY - lh, tw, lh + 1.2, { url });
+        return tw;   // return width so caller can chain
     };
 
-    // ── HEADER ────────────────────────────────────────────────
-    doc.setFontSize(22);
+    // ── Bullet line ───────────────────────────────────────────
+    const bullet = (text, indent = 4) => {
+        checkPage(7);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.setTextColor(...MID);
+        doc.text("\u2022", MARGIN + indent, y);
+        const lines = doc.splitTextToSize(text, CW - indent - 5);
+        doc.text(lines, MARGIN + indent + 4, y);
+        y += lines.length * 5 + 0.5;
+    };
+
+    // ═══════════════════════════════════════════════════════════
+    // HEADER
+    // ═══════════════════════════════════════════════════════════
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(...DARK);
+    doc.setFontSize(16);
+    doc.setTextColor(...BLACK);
     doc.text("MD. MUTTAKIUL ISLAM TUSER", W / 2, y, { align: "center" });
-    y += 7;
+    y += 6;
 
-    doc.setFontSize(11);
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(...PRIMARY);
-    doc.text("MERN Stack Developer", W / 2, y, { align: "center" });
-    y += 5;
+    doc.setFontSize(10);
+    doc.setTextColor(...DARK);
+    doc.text("Full-Stack Web Developer | MERN Stack | Frontend Specialist", W / 2, y, { align: "center" });
+    y += 5.5;
 
-    doc.setFontSize(8.5);
+    // Contact line (plain text)
     doc.setFont("helvetica", "normal");
+    doc.setFontSize(9.5);
     doc.setTextColor(...MUTED);
     doc.text(
-        "tuser720@gmail.com  ·  +8801760049326  ·  DSC, Asulia, Birulia, Dhaka-1216, Bangladesh",
+        "tusermon720@gmail.com  |  +880 1760-049326  |  DSC, Asulia, Birulia, Dhaka-1216, Bangladesh",
         W / 2, y, { align: "center" }
     );
     y += 5;
 
-    // social links row — each link clickable
+    // Social links row — clickable, centred
     const socials = [
-        { label: "GitHub",   url: "https://github.com/tuser579" },
+        { label: "Portfolio", url: "https://portfolio-live-site.vercel.app/" },
+        { label: "GitHub", url: "https://github.com/tuser579" },
         { label: "LinkedIn", url: "https://www.linkedin.com/in/md-muttakiul-islam-tuser-36b104388" },
-        { label: "Twitter",  url: "https://x.com/md_57990667" },
+        { label: "Twitter", url: "https://x.com/md_57990667" },
         { label: "Facebook", url: "https://www.facebook.com/mohammad.osman.98622" },
     ];
 
-    // measure total width to centre the row
-    doc.setFontSize(8.5);
-    const sep = "  ·  ";
+    const sep = "  |  ";
+    doc.setFontSize(9.5);
     const sepW = doc.getTextWidth(sep);
-    const labelWidths = socials.map(s => doc.getTextWidth(s.label));
-    const totalW = labelWidths.reduce((a, b) => a + b, 0) + sepW * (socials.length - 1);
+    const lWs = socials.map(s => { doc.setFontSize(9.5); return doc.getTextWidth(s.label); });
+    const totalW = lWs.reduce((a, b) => a + b, 0) + sepW * (socials.length - 1);
     let sx = (W - totalW) / 2;
 
     socials.forEach((s, i) => {
-        addLink(s.label, s.url, sx, y, 8.5);
-        sx += labelWidths[i];
+        addLink(s.label, s.url, sx, y, 9.5);
+        sx += lWs[i];
         if (i < socials.length - 1) {
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(9.5);
             doc.setTextColor(...MUTED);
             doc.text(sep, sx, y);
             sx += sepW;
         }
     });
-    y += 5;
+    y += 6;
 
-    // thick divider
-    doc.setDrawColor(...PRIMARY);
-    doc.setLineWidth(1.5);
-    doc.line(MARGIN, y, W - MARGIN, y);
-    y += 5;
+    hRule();
 
-    // ── CAREER OBJECTIVE ──────────────────────────────────────
-    sectionTitle("CAREER OBJECTIVE");
-    doc.setFontSize(9);
+    // ═══════════════════════════════════════════════════════════
+    // PROFESSIONAL SUMMARY
+    // ═══════════════════════════════════════════════════════════
+    sectionTitle("Professional Summary");
+
     doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
     doc.setTextColor(...MID);
-    const objLines = doc.splitTextToSize(
+    const summary =
         "A MERN-Stack Developer by passion, I started my coding journey with HTML, CSS, and JavaScript " +
-        "before diving deep into React, Node.js, Express.js, and MongoDB. Through building booking systems, " +
-        "e-commerce solutions, and community skill-sharing platforms, I have honed my ability to solve " +
-        "problems and design robust APIs. My goal is simple: build applications that are practical, " +
-        "meaningful, and genuinely delightful for users.", CW);
-    doc.text(objLines, MARGIN, y);
-    y += objLines.length * 5 + 2;
+        "before diving deep into React, Next.js Node.js, Express.js, and MongoDB. Through car rental   " +
+        "booking systems, community skill-sharing platforms, cityfix issue solving systems, e-commerce " +
+        "website applications. Proficient in responsive UI development with Tailwind CSS and deployment" +
+        "workflows using Vercel, Netlify, and Firebase. I have honed my ability to solve problems. My  " +
+        "goal is simple: build applications that are practical, meaningful, and delightful for users.";
+    const sumLines = doc.splitTextToSize(summary, CW);
+    doc.text(sumLines, MARGIN, y);
+    y += sumLines.length * 5 + 3;
 
-    // ── SKILLS ────────────────────────────────────────────────
-    sectionTitle("SKILLS");
-    const skills = [
-        ["Frontend",                 "HTML, CSS, Tailwind CSS, JavaScript (ES6+), React.js, Next.js"],
-        ["Backend",                  "Node.js, Express.js"],
-        ["Database",                 "MongoDB"],
+    // ═══════════════════════════════════════════════════════════
+    // TECHNICAL SKILLS
+    // ═══════════════════════════════════════════════════════════
+    sectionTitle("Technical Skills");
+
+    const skillGroups = [
+        ["Frontend Development", "HTML5, CSS3, Tailwind CSS, JavaScript (ES6+), React.js, Next.js"],
+        ["Backend Development", "Node.js, Express.js"],
+        ["Database", "MongoDB"],
         ["Version Control & Deploy", "Git, GitHub, Firebase, Vercel, Netlify"],
-        ["Soft Skills",              "Team collaboration, problem-solving, adaptability"],
+        ["Soft Skills", "Team Collaboration, Problem-Solving, Adaptability, Agile Mindset"],
     ];
-    const colW = CW / 2;
-    for (let i = 0; i < skills.length; i += 2) {
-        const pair = skills.slice(i, i + 2);
-        const cellH = 12;
-        checkPage(cellH + 2);
-        pair.forEach((sk, j) => {
-            const cx = MARGIN + j * colW;
-            doc.setFillColor(...LIGHT_BG);
-            doc.setDrawColor(...BORDER);
-            doc.setLineWidth(0.3);
-            doc.rect(cx, y, colW, cellH, "FD");
-            doc.setFontSize(7);
-            doc.setFont("helvetica", "bold");
-            doc.setTextColor(...MUTED);
-            doc.text(sk[0].toUpperCase(), cx + 4, y + 4.5);
-            doc.setFontSize(8.5);
-            doc.setFont("helvetica", "normal");
-            doc.setTextColor(...DARK);
-            const lines = doc.splitTextToSize(sk[1], colW - 8);
-            doc.text(lines, cx + 4, y + 8);
-        });
-        y += cellH + 1;
-    }
+
+    skillGroups.forEach(([label, value]) => {
+        checkPage(7);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.setTextColor(...DARK);
+        const labelText = label + ":  ";
+        const lw = doc.getTextWidth(labelText);
+        doc.text(labelText, MARGIN + 4, y);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...MID);
+        const valLines = doc.splitTextToSize(value, CW - 4 - lw);
+        doc.text(valLines, MARGIN + 4 + lw, y);
+        y += valLines.length * 5 + 0.5;
+    });
+
     y += 2;
 
-    // ── PROJECTS ──────────────────────────────────────────────
-    sectionTitle("PROJECTS");
-    const projData = [0, 1, 2].map(i => ({
-        name:   projects[i].name,
-        desc:   projects[i].shortDescription,
-        tech:   projects[i].techStack.slice(0, 5),
-        live:   projects[i].liveLink,
-        github: projects[i].githubLink,
-    }));
+    // ═══════════════════════════════════════════════════════════
+    // PROJECTS
+    // ═══════════════════════════════════════════════════════════
+    sectionTitle("Projects");
 
-    projData.forEach((p) => {
-        checkPage(30);
+    projects.forEach((p) => {
+        checkPage(38);
 
-        // project name (plain, dark)
-        doc.setFontSize(10);
+        // ── Project name (left) + links (right) on same line ──
         doc.setFont("helvetica", "bold");
+        doc.setFontSize(10.5);
         doc.setTextColor(...DARK);
         doc.text(p.name, MARGIN, y);
 
-        // "Live" clickable link
-        const liveLabel   = "Live";
-        const sepLabel    = "  ·  ";
-        const githubLabel = "GitHub";
-        doc.setFontSize(8.5);
-        const liveW   = doc.getTextWidth(liveLabel);
-        const sepW2   = doc.getTextWidth(sepLabel);
-        const githubW = doc.getTextWidth(githubLabel);
-        const rowW    = liveW + sepW2 + githubW;
-        let rx        = W - MARGIN - rowW;
+        // Links top-right on same line as project name
+        const liveLabel = "Live Demo";
+        const separator = "   |   ";
+        const repoLabel = "GitHub";
 
-        addLink(liveLabel, p.live, rx, y, 8.5);
-        rx += liveW;
+        doc.setFontSize(9.5);
+        const repoTW = doc.getTextWidth(repoLabel);
+        const sepTW = doc.getTextWidth(separator);
+        const liveTW = doc.getTextWidth(liveLabel);
+        const rowW = liveTW + sepTW + repoTW;
+
+        let rx = W - MARGIN - rowW;   // right-aligned start
+
+        addLink(liveLabel, p.liveLink, rx, y, 9.5);
+        rx += liveTW;
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9.5);
         doc.setTextColor(...MUTED);
-        doc.setFontSize(8.5);
-        doc.text(sepLabel, rx, y);
-        rx += sepW2;
-        addLink(githubLabel, p.github, rx, y, 8.5);
+        doc.text(separator, rx, y);
+        rx += sepTW;
 
-        y += 5;
+        addLink(repoLabel, p.githubLink, rx, y, 9.5);
 
-        // description
-        doc.setFontSize(8.5);
+        y += 5.5;
+
+        // ── Short description as bullet ──
+        bullet(p.shortDescription);
+
+        // ── Tech stack ──
+        checkPage(7);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9.5);
+        doc.setTextColor(...DARK);
+        const techLabel = "Technologies:  ";
+        const tlw = doc.getTextWidth(techLabel);
+        doc.text(techLabel, MARGIN + 4, y);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(...MID);
-        const descLines = doc.splitTextToSize(p.desc, CW);
-        doc.text(descLines, MARGIN, y);
-        y += descLines.length * 4.5 + 2;
-
-        // tech tags
-        doc.setFontSize(8);
-        doc.setTextColor(...PRIMARY);
-        doc.text(p.tech.map(t => `[ ${t} ]`).join("  "), MARGIN, y);
-        y += 7;
+        const techStack = p.techStack.slice(0, 5).join(", ");
+        const techLines = doc.splitTextToSize(techStack, CW - 4 - tlw);
+        doc.text(techLines, MARGIN + 4 + tlw, y);
+        y += techLines.length * 5 + 5;
     });
 
-    // ── EDUCATION ─────────────────────────────────────────────
-    sectionTitle("EDUCATION");
-    checkPage(20);
+    // ═══════════════════════════════════════════════════════════
+    // EDUCATION
+    // ═══════════════════════════════════════════════════════════
+    sectionTitle("Education");
+    checkPage(22);
 
-    doc.setFillColor(...PRIMARY);
-    doc.rect(MARGIN, y, 2.5, 16, "F");
-    doc.setFillColor(...LIGHT_BG);
-    doc.setDrawColor(...BORDER);
-    doc.setLineWidth(0.3);
-    doc.rect(MARGIN + 2.5, y, CW - 2.5, 16, "FD");
-
-    doc.setFontSize(9.5);
     doc.setFont("helvetica", "bold");
+    doc.setFontSize(10.5);
     doc.setTextColor(...DARK);
-    doc.text("B.Sc. in Computer Science and Engineering (CSE)", MARGIN + 7, y + 5);
-
-    doc.setFontSize(8);
+    doc.text("Bachelor of Science in Computer Science and Engineering (CSE)", MARGIN, y);
     doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
     doc.setTextColor(...MUTED);
-    doc.text("Daffodil International University (DIU)", MARGIN + 7, y + 10);
+    doc.text("2024 – Present", W - MARGIN, y, { align: "right" });
+    y += 5.5;
 
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...PRIMARY);
-    doc.text("2024 – Present", W - MARGIN - 2, y + 5, { align: "right" });
     doc.setFont("helvetica", "normal");
-    doc.setTextColor(...MUTED);
-    doc.text("DSC, Asulia, Birulia, Dhaka-1216", W - MARGIN - 2, y + 10, { align: "right" });
+    doc.setFontSize(10);
+    doc.setTextColor(...MID);
+    doc.text("Daffodil International University (DIU)  —  DSC, Asulia, Birulia, Dhaka-1216", MARGIN, y);
+    y += 5.5;
+
+    bullet("Pursuing coursework in Data Structures, Algorithms, Database Systems, and Software Engineering.");
+    bullet("Actively developing full-stack web projects as practical application of academic learning.");
+
     y += 20;
 
-    // ── LANGUAGES ─────────────────────────────────────────────
-    sectionTitle("LANGUAGES");
-    checkPage(16);
-    const langW = CW / 2;
-    [["Bengali", "Native"], ["English", "Intermediate"]].forEach(([lang, level], i) => {
-        const cx = MARGIN + i * langW;
-        doc.setFillColor(...LIGHT_BG);
-        doc.setDrawColor(...BORDER);
-        doc.setLineWidth(0.3);
-        doc.rect(cx, y, langW, 14, "FD");
-        doc.setFontSize(9);
+
+    // ═══════════════════════════════════════════════════════════
+    // CERTIFICATIONS & COMPETITIONS
+    // ═══════════════════════════════════════════════════════════
+    sectionTitle("Achieved Certifications");
+    certifications.forEach((cert) => {
+        checkPage(22);
+
+        // Title (bold) + Date (right)
         doc.setFont("helvetica", "bold");
+        doc.setFontSize(10.5);
         doc.setTextColor(...DARK);
-        doc.text(lang, cx + langW / 2, y + 5.5, { align: "center" });
-        doc.setFontSize(8);
+        doc.text(cert.title, MARGIN, y);
+
         doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
         doc.setTextColor(...MUTED);
-        doc.text(level, cx + langW / 2, y + 10, { align: "center" });
+        doc.text(cert.date, W - MARGIN, y, { align: "right" });
+        y += 5;
+
+        // Issuer — plain muted text
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.setTextColor(...MUTED);
+        doc.text(cert.issuer, MARGIN, y);
+
+        // Credential link (right side, same line as issuer) — only if URL exists
+        if (cert.credentialUrl) {
+            const credLabel = "View Credential";
+            doc.setFontSize(9.5);
+            const credW = doc.getTextWidth(credLabel);
+            addLink(credLabel, cert.credentialUrl, W - MARGIN - credW, y, 9.5);
+        }
+        y += 5.5;
+
+        // Description bullet
+        bullet(cert.description);
+
+        y += 2;
     });
 
+    // ═══════════════════════════════════════════════════════════
+    // LANGUAGES
+    // ═══════════════════════════════════════════════════════════
+    sectionTitle("Languages");
+    checkPage(14);
+
+    bullet("Bengali — Native proficiency");
+    bullet("English — Intermediate proficiency");
+
+    y += 3;
+
+    // ═══════════════════════════════════════════════════════════
+    // ADDITIONAL INFORMATION
+    // ═══════════════════════════════════════════════════════════
+    sectionTitle("Additional Information");
+    checkPage(18);
+
+    bullet("Open to remote and full-stack development fronted focused roles.");
+    bullet("Continuously improving skills through personal projects, online courses, and open-source contributions.");
+    bullet("Available for internships, freelance engagements, and full-time junior developer positions.");
+
+    // ═══════════════════════════════════════════════════════════
+    // SAVE
+    // ═══════════════════════════════════════════════════════════
     doc.save("MD_Muttakiul_Islam_Tuser_Resume.pdf");
 }
 
@@ -316,7 +365,8 @@ const DownloadButton = ({ className, iconSize = "w-3.5 h-3.5", label = "Download
 
 // ─────────────────────────────────────────────────────────────
 //  RESUME MODAL
-// ─────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────
+
 const ResumeModal = ({ onClose }) => (
     <AnimatePresence>
         <motion.div
@@ -362,9 +412,9 @@ const ResumeModal = ({ onClose }) => (
                     {/* Header */}
                     <div className="text-center pb-4 border-b border-border/40">
                         <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-1">MD. MUTTAKIUL ISLAM TUSER</h2>
-                        <p className="text-primary font-mono text-sm font-semibold mb-2">MERN Stack Developer</p>
+                        <p className="text-primary font-mono text-sm font-semibold mb-2">Full-Stack Web Developer | MERN Stack | Frontend Specialist</p>
                         <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                            <span>tuser720@gmail.com</span>
+                            <span>tusermon720@gmail.com</span>
                             <span>+8801760049326</span>
                             <span>DSC, Asulia, Birulia, Dhaka-1216, Bangladesh</span>
                         </div>
@@ -387,10 +437,7 @@ const ResumeModal = ({ onClose }) => (
                     <div>
                         <h3 className="text-xs font-bold uppercase tracking-widest text-primary mb-2 font-mono">Career Objective</h3>
                         <p className="text-foreground/80 leading-relaxed text-sm">
-                            A MERN-Stack Developer by passion, I started my coding journey with HTML, CSS, and JavaScript before
-                            diving deep into React, Node.js, Express.js, and MongoDB. Through building booking systems, e-commerce
-                            solutions, and community skill-sharing platforms, I have honed my ability to solve problems and design
-                            robust APIs. My goal is simple: build applications that are practical, meaningful, and genuinely delightful for users.
+                            A MERN-Stack Developer by passion, I started my coding journey with HTML, CSS, and JavaScript before diving deep into React, Next.js Node.js, Express.js, and MongoDB. Through car rental booking systems, community skill-sharing platforms, cityfix issue solving systems, e-commerce website applications. Proficient in responsive UI development with Tailwind CSS and deployment workflows using Vercel, Netlify, and Firebase. I have honed my ability to solve problems. My goal is simple: build applications that are practical, meaningful, and delightful for users.
                         </p>
                     </div>
 
@@ -399,11 +446,11 @@ const ResumeModal = ({ onClose }) => (
                         <h3 className="text-xs font-bold uppercase tracking-widest text-primary mb-3 font-mono">Skills</h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             {[
-                                { label: "Frontend",                 value: "HTML, CSS, Tailwind CSS, JavaScript (ES6+), React.js, Next.js" },
-                                { label: "Backend",                  value: "Node.js, Express.js" },
-                                { label: "Database",                 value: "MongoDB" },
+                                { label: "Frontend",               value: "HTML, CSS, Tailwind CSS, JavaScript (ES6+), React.js, Next.js" },
+                                { label: "Backend",                value: "Node.js, Express.js" },
+                                { label: "Database",               value: "MongoDB" },
                                 { label: "Version Control & Deploy", value: "Git, GitHub, Firebase, Vercel, Netlify" },
-                                { label: "Soft Skills",              value: "Team collaboration, problem-solving, adaptability" },
+                                { label: "Soft Skills",            value: "Team collaboration, problem-solving, adaptability" },
                             ].map(({ label, value }) => (
                                 <div key={label} className="glass-card rounded-lg p-3 border border-border/40">
                                     <p className="text-[10px] font-bold uppercase tracking-wider text-primary/70 mb-1">{label}</p>
@@ -417,7 +464,7 @@ const ResumeModal = ({ onClose }) => (
                     <div>
                         <h3 className="text-xs font-bold uppercase tracking-widest text-primary mb-3 font-mono">Projects</h3>
                         <div className="space-y-4">
-                            {[0, 1, 2].map(i => ({
+                            {[0, 1, 2, 3].map(i => ({
                                 name:   projects[i].name,
                                 desc:   projects[i].shortDescription,
                                 tech:   projects[i].techStack.slice(0, 5),
@@ -454,6 +501,37 @@ const ResumeModal = ({ onClose }) => (
                             <p className="font-bold text-foreground text-sm">B.Sc. in Computer Science and Engineering (CSE)</p>
                             <p className="text-muted-foreground text-xs mt-0.5">Daffodil International University (DIU)</p>
                             <p className="text-primary font-mono text-xs mt-1">2024 – Present · DSC, Asulia, Birulia, Dhaka-1216, Bangladesh</p>
+                        </div>
+                    </div>
+
+                    {/* Certifications & Competitions */}
+                    <div>
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-primary mb-3 font-mono">Certifications & Competitions</h3>
+                        <div className="space-y-3">
+                            {certifications.map((cert) => (
+                                <div key={cert.title} className="glass-card rounded-xl p-4 border border-border/40 hover:border-primary/30 transition-all duration-300 group">
+                                    <div className="flex items-start justify-between mb-1">
+                                        <p className="font-bold text-foreground text-sm group-hover:text-primary transition-colors leading-snug">
+                                            {cert.title}
+                                        </p>
+                                        <span className="text-[10px] text-muted-foreground font-mono shrink-0 ml-2 mt-0.5">
+                                            {cert.date}
+                                        </span>
+                                    </div>
+                                    <p className="text-primary/70 text-[10px] font-mono mb-2">{cert.issuer}</p>
+                                    <p className="text-foreground/70 text-xs leading-relaxed">{cert.description}</p>
+                                    {cert.credentialUrl && (
+                                        <a
+                                            href={cert.credentialUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1 mt-2 text-[10px] text-primary hover:underline font-mono"
+                                        >
+                                            View Credential <ExternalLink className="w-3 h-3" />
+                                        </a>
+                                    )}
+                                </div>
+                            ))}
                         </div>
                     </div>
 
@@ -560,10 +638,10 @@ const Hero = () => {
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}
                                 className="flex justify-center sm:justify-start gap-4">
                                 {[
-                                    { icon: Github,   href: "https://github.com/tuser579",                                    label: "GitHub"   },
+                                    { icon: Github, href: "https://github.com/tuser579", label: "GitHub" },
                                     { icon: Linkedin, href: "https://www.linkedin.com/in/md-muttakiul-islam-tuser-36b104388", label: "LinkedIn" },
-                                    { icon: Twitter,  href: "https://x.com/md_57990667",                                     label: "Twitter"  },
-                                    { icon: Facebook, href: "https://www.facebook.com/mohammad.osman.98622",                  label: "Facebook" },
+                                    { icon: Twitter, href: "https://x.com/md_57990667", label: "Twitter" },
+                                    { icon: Facebook, href: "https://www.facebook.com/mohammad.osman.98622", label: "Facebook" },
                                 ].map(({ icon: Icon, href, label }) => (
                                     <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={label}
                                         className="p-3 rounded-lg hover:bg-primary hover:text-primary-foreground text-muted-foreground transition-all duration-300 hover-lift">

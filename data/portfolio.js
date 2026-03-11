@@ -1,6 +1,7 @@
 import project1Img from "../public/Gemini_Generated_Image_lh7y8olh7y8olh7y.png";
 import project2Img from "../public/Gemini_Generated_Image_hgtlmvhgtlmvhgtl.png";
 import project3Img from "../public/Gemini_Generated_Image_aak1x6aak1x6aak1.png";
+import project4Img from "../public/Gemini_Generated_Image_oyoorxoyoorxoyoo.png";
 
 // ─── Projects ───────────────────────────────────────────────
 export const projects = [
@@ -43,6 +44,43 @@ export const projects = [
     ],
   },
   {
+    id: "volt-store",
+    name: "Volt Store — Premium Electronics E-Commerce",
+    image: project4Img,
+    shortDescription:
+      "A polished, full-featured electronics e-commerce platform with authentication, protected routes, dark/light mode, and a premium Dark Tech UI theme.",
+    description:
+      "Volt Store is a premium electronics e-commerce application built with Next.js 15 App Router. It features a complete authentication system powered by NextAuth.js supporting both Google OAuth and credentials-based login. The platform includes protected dashboard routes for adding and managing products, a live product search and filter system with category chips and sorting, and a fully responsive layout across all screen sizes. The UI adopts a Dark Tech theme with a deep navy black background, electric blue primary accents, and cyan highlights. Smooth user experiences are achieved through GSAP hero animations, Framer Motion page transitions and modals, and Lenis smooth scrolling. Product management is handled through dedicated dashboard pages with confirmation modals and toast notifications for all actions.",
+    techStack: [
+      "Next",
+      "NextAuth",
+      "Tailwind",
+      "MongoDb",
+      "GSAP",
+      "Lenis",
+      "next-themes",
+      "react-hot-toast",
+      "lucide-react",
+    ],
+    liveLink: "https://volt-store-one.vercel.app/",
+    githubLink: "https://github.com/tuser579/Volt_Store",
+    challenges: [
+      "Implementing secure authentication with NextAuth.js supporting both Google OAuth and credentials providers simultaneously",
+      "Building protected dashboard routes that seamlessly redirect unauthenticated users to login while preserving intended destinations",
+      "Orchestrating multiple animation libraries (GSAP, Framer Motion, Lenis) together without conflicts or performance degradation",
+      "Designing a persistent dark/light mode system using next-themes that survives page reloads and respects system preferences",
+      "Creating a live product search and filter system with category chips and sorting that remains performant across large catalogs",
+    ],
+    improvements: [
+      "Integrate a real database (PostgreSQL or MongoDB) to replace static product data with persistent storage",
+      "Add a full shopping cart and checkout flow with Stripe payment processing",
+      "Implement product reviews and ratings with moderation tools for admins",
+      "Add real-time inventory tracking and low-stock alerts for store managers",
+      "Build a wishlist feature with shareable links for social commerce",
+      "Introduce AI-powered product recommendations based on browsing and purchase history",
+    ],
+  },
+  {
     id: "carrental",
     name: "RentWheels – Car Rental Platform",
     image: project2Img,
@@ -76,7 +114,7 @@ export const projects = [
   {
     id: "skillswap",
     name: "SkillSwap – Local Skill Exchange Platform",
-    image: project3Img, 
+    image: project3Img,
     shortDescription:
       "A community-driven platform to share and learn skills locally. Offer lessons, find learning opportunities, and connect with others nearby.",
     description:
@@ -171,3 +209,22 @@ export const education = [
       "Focused on software engineering, data structures, and web technologies. Graduated with honors.",
   },
 ];
+
+// Cerficate
+export
+  const certifications = [
+    {
+      title: "Participated — Unlock the Algorithm Contest",
+      issuer: "Daffodil CPC Club",
+      date: "Spring 2025",
+      description: "Secured 9th position out of 700+ students.",
+      credentialUrl: "https://drive.google.com/file/d/1uJljQwQD6rjtP5NIRepXvPEAGc6-sXBp/view?usp=drive_link",
+    },
+    {
+      title: "Participated — DIU BreakOut Algorithm Programming Contest",
+      issuer: "Daffodil SWE Club",
+      date: "Spring 2025",
+      description: "Secured 5th position out of 150+ students.",
+      credentialUrl: "https://drive.google.com/file/d/1pTkHkPkntcBpnNDSq7YTr3SComSJIYzR/view?usp=drive_link",
+    },
+  ];
