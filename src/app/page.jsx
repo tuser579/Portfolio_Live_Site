@@ -8,6 +8,8 @@ import ExperienceEducation from "../../Components/ui/Experienceeducation";
 import Projects from "../../Components/ui/Projects";
 import Contact from "../../Components/ui/Contact";
 import Footer from "../../Components/ui/Footer";
+import CertificationsSection from "../../Components/ui/CertificationsSection";
+import ProblemSolving from "../../Components/ui/ProblemSolving";
 
 export default function Home() {
   return (
@@ -16,9 +18,11 @@ export default function Home() {
         <Navbar />
         <Hero />
         <About />
+        <ProblemSolving />
         <Skills />
         <ExperienceEducation />
         <Projects />
+        <CertificationsSection />
         <Contact />
         <Footer />
     </div>

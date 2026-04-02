@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    Download, Github, Linkedin, Twitter, Facebook,
+    Download, Eye, Github, Linkedin, Twitter, Facebook,
     X, FileText, ExternalLink, Loader2
 } from "lucide-react";
 import Image from "next/image";
@@ -420,10 +420,10 @@ const ResumeModal = ({ onClose }) => (
                         </div>
                         <div className="flex flex-wrap items-center justify-center gap-3 mt-2">
                             {[
-                                { label: "GitHub",   href: "https://github.com/tuser579" },
+                                { label: "GitHub", href: "https://github.com/tuser579" },
                                 { label: "LinkedIn", href: "https://www.linkedin.com/in/md-muttakiul-islam-tuser-36b104388" },
-                                { label: "Twitter",  href: "https://x.com/md_57990667" },
-                                { label: "Facebook", href: "https://www.facebook.com/mohammad.osman.98622" },
+                                // { label: "Twitter",  href: "https://x.com/md_57990667" },
+                                // { label: "Facebook", href: "https://www.facebook.com/mohammad.osman.98622" },
                             ].map(({ label, href }) => (
                                 <a key={label} href={href} target="_blank" rel="noopener noreferrer"
                                     className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
@@ -446,11 +446,11 @@ const ResumeModal = ({ onClose }) => (
                         <h3 className="text-xs font-bold uppercase tracking-widest text-primary mb-3 font-mono">Skills</h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             {[
-                                { label: "Frontend",               value: "HTML, CSS, Tailwind CSS, JavaScript (ES6+), React.js, Next.js" },
-                                { label: "Backend",                value: "Node.js, Express.js" },
-                                { label: "Database",               value: "MongoDB" },
+                                { label: "Frontend", value: "HTML, CSS, Tailwind CSS, JavaScript (ES6+), React.js, Next.js" },
+                                { label: "Backend", value: "Node.js, Express.js" },
+                                { label: "Database", value: "MongoDB" },
                                 { label: "Version Control & Deploy", value: "Git, GitHub, Firebase, Vercel, Netlify" },
-                                { label: "Soft Skills",            value: "Team collaboration, problem-solving, adaptability" },
+                                { label: "Soft Skills", value: "Team collaboration, problem-solving, adaptability" },
                             ].map(({ label, value }) => (
                                 <div key={label} className="glass-card rounded-lg p-3 border border-border/40">
                                     <p className="text-[10px] font-bold uppercase tracking-wider text-primary/70 mb-1">{label}</p>
@@ -464,13 +464,14 @@ const ResumeModal = ({ onClose }) => (
                     <div>
                         <h3 className="text-xs font-bold uppercase tracking-widest text-primary mb-3 font-mono">Projects</h3>
                         <div className="space-y-4">
-                            {[0, 1, 2, 3].map(i => ({
-                                name:   projects[i].name,
-                                desc:   projects[i].shortDescription,
-                                tech:   projects[i].techStack.slice(0, 5),
-                                link:   projects[i].liveLink,
+                            {[0, 1, 2].map(i => ({
+                                name: projects[i].name,
+                                desc: projects[i].shortDescription,
+                                highlights: projects[i].highlights,
+                                tech: projects[i].techStack.slice(0, 5),
+                                link: projects[i].liveLink,
                                 github: projects[i].githubLink,
-                            })).map(({ name, desc, tech, link, github }) => (
+                            })).map(({ name, desc, highlights, tech, link, github }) => (
                                 <div key={name} className="glass-card rounded-xl p-4 border border-border/40 hover:border-primary/30 transition-all duration-300 group">
                                     <div className="flex items-start justify-between mb-2">
                                         <h4 className="font-bold text-foreground text-sm group-hover:text-primary transition-colors">{name}</h4>
@@ -483,7 +484,18 @@ const ResumeModal = ({ onClose }) => (
                                             </a>
                                         </div>
                                     </div>
-                                    <p className="text-foreground/70 text-xs leading-relaxed mb-3 line-clamp-2">{desc}</p>
+                                    <p className="text-foreground/70 text-xs leading-relaxed mb-3 line-clamp-2"> <span className="text-blue-300 font-bold">Overview:</span> {desc}</p>
+
+                                    {/* Highlights Section - 3 bullet points */}
+                                    <div className="mb-3 space-y-1">
+                                        {highlights && highlights.map((highlight, idx) => (
+                                            <div key={idx} className="flex items-start gap-1.5">
+                                                <span className="text-primary text-[10px] mt-0.5">▹</span>
+                                                <span className="text-foreground/60 text-[10px] leading-relaxed">{highlight}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+
                                     <div className="flex flex-wrap gap-1.5">
                                         {tech.map(t => (
                                             <span key={t} className="text-[10px] px-2 py-0.5 rounded-md border border-border text-primary font-mono bg-primary/5">{t}</span>
@@ -626,8 +638,8 @@ const Hero = () => {
                                 <button onClick={() => setShowResume(true)}
                                     className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold text-primary-foreground transition-all duration-300 glow hover-lift w-full sm:w-auto"
                                     style={{ backgroundImage: "var(--gradient-primary)" }}>
-                                    <Download className="w-4 h-4" />
-                                    Download Resume
+                                    <Eye className="w-4 h-4" />
+                                    Show Resume
                                 </button>
                                 <Link href="#contact"
                                     className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold border border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 w-full sm:w-auto">

@@ -13,6 +13,11 @@ export const projects = [
       "Empower citizens to report and track infrastructure issues — bridging communities and municipal services for faster, transparent resolutions.",
     description:
       "CityFix is a full-stack public issue reporting platform that connects citizens with municipal authorities. Users can report infrastructure problems (potholes, broken streetlights, garbage buildup, etc.), attach photos, and track the status of their reports in real-time. The platform features role-based access control with three user types: citizens, municipal staff, and admins. Citizens can vote on important issues to prioritize municipal actions, while staff can update issue statuses (Pending → In-Progress → Working → Resolved → Closed). The system includes email notifications, an analytics dashboard for city administrators, and a gamification system that rewards active community participants with badges and recognition.",
+    highlights: [
+      "Citizen-powered reporting with real-time issue tracking (Pending → In-Progress → Working → Resolved → Closed)",
+      "Role-based access for citizens, municipal staff, and admins with voting to prioritize community concerns",
+      "Gamification system rewarding active participants with badges and recognition",
+    ],
     techStack: [
       "React",
       "Node.js",
@@ -51,6 +56,11 @@ export const projects = [
       "A polished, full-featured electronics e-commerce platform with authentication, protected routes, dark/light mode, and a premium Dark Tech UI theme.",
     description:
       "Volt Store is a premium electronics e-commerce application built with Next.js 15 App Router. It features a complete authentication system powered by NextAuth.js supporting both Google OAuth and credentials-based login. The platform includes protected dashboard routes for adding and managing products, a live product search and filter system with category chips and sorting, and a fully responsive layout across all screen sizes. The UI adopts a Dark Tech theme with a deep navy black background, electric blue primary accents, and cyan highlights. Smooth user experiences are achieved through GSAP hero animations, Framer Motion page transitions and modals, and Lenis smooth scrolling. Product management is handled through dedicated dashboard pages with confirmation modals and toast notifications for all actions.",
+    highlights: [
+      "Full authentication with NextAuth.js supporting Google OAuth and credentials login",
+      "Dark Tech UI theme with GSAP animations, Framer Motion transitions, and Lenis smooth scrolling",
+      "Protected dashboard routes with live product search, category filtering, and sorting",
+    ],
     techStack: [
       "Next",
       "NextAuth",
@@ -88,6 +98,11 @@ export const projects = [
       "A comprehensive car rental platform with real-time booking, vehicle tracking, and secure payments.",
     description:
       "RentWheels is a full-stack car rental platform that allows users to browse available vehicles, make reservations, and manage their rentals. Features include real-time vehicle availability, secure payment processing, booking history, and admin dashboard for fleet management. Users can filter cars by type, price, and location, with integrated Google Maps for pickup/dropoff locations.",
+    highlights: [
+      "Real-time vehicle availability preventing double bookings with secure payment processing",
+      "Interactive fleet browsing with filtering by type, price, and location",
+      "Admin dashboard for comprehensive fleet and booking management",
+    ],
     techStack: [
       "React",
       "Node.js",
@@ -119,6 +134,11 @@ export const projects = [
       "A community-driven platform to share and learn skills locally. Offer lessons, find learning opportunities, and connect with others nearby.",
     description:
       "SkillSwap is a local skill exchange platform designed to help people share and learn skills within their community. Users can offer lessons, find learning opportunities, and connect with others nearby, making learning more personal, affordable, and community-driven. The platform features a comprehensive authentication system, public and private routes, a dynamic navbar, and a protected footer. It allows users to browse popular skills like Guitar Lessons, Python Programming, and Web Design, and connect with top-rated providers.",
+    highlights: [
+      "Community-driven learning allowing users to offer lessons and find local skill opportunities",
+      "Secure authentication with public/private routes and dynamic navigation",
+      "Interactive UI featuring smooth animations, carousels, and toast notifications",
+    ],
     techStack: [
       "React",
       "Vite",
