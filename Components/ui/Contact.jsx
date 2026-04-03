@@ -52,11 +52,11 @@ const Contact = () => {
                         Get In <span className="text-gradient">Touch</span>
                     </h2>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:items-stretch">
 
-                        {/* Left */}
-                        <div className="space-y-6">
-                            <div className="glass-card rounded-xl p-5 sm:p-6">
+                        {/* Left — stretches to match right column height */}
+                        <div className="flex flex-col gap-6 h-full">
+                            <div className="glass-card rounded-xl p-5 sm:p-6 flex-1">
                                 <h3 className="font-bold text-foreground mb-4">Contact Info</h3>
                                 <div className="space-y-4">
                                     {[

@@ -14,9 +14,9 @@ export const projects = [
     description:
       "CityFix is a full-stack public issue reporting platform that connects citizens with municipal authorities. Users can report infrastructure problems (potholes, broken streetlights, garbage buildup, etc.), attach photos, and track the status of their reports in real-time. The platform features role-based access control with three user types: citizens, municipal staff, and admins. Citizens can vote on important issues to prioritize municipal actions, while staff can update issue statuses (Pending → In-Progress → Working → Resolved → Closed). The system includes email notifications, an analytics dashboard for city administrators, and a gamification system that rewards active community participants with badges and recognition.",
     highlights: [
-      "Citizen-powered reporting with real-time issue tracking (Pending → In-Progress → Working → Resolved → Closed)",
-      "Role-based access for citizens, municipal staff, and admins with voting to prioritize community concerns",
-      "Gamification system rewarding active participants with badges and recognition",
+      "Real-time issue tracking with status updates (Pending to Closed)",
+      "Role-based access for citizens, staff, and admins with community voting",
+      "Gamification system rewarding active participants with badges",
     ],
     techStack: [
       "React",

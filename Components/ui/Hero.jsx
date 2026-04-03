@@ -16,49 +16,44 @@ import { certifications } from "../../data/portfolio";
 //  PDF GENERATOR — all links are clickable via doc.link()
 // ─────────────────────────────────────────────────────────────
 
-// update resume
 async function generateAndDownloadPDF() {
     const { default: jsPDF } = await import("jspdf");
 
     const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
     const W = 210;
-    const MARGIN = 20;
+    const MARGIN = 18; // Slightly tighter margin to gain vertical space
     const CW = W - MARGIN * 2;
-    let y = 20;
+    let y = 10;
 
     const BLACK = [0, 0, 0];
     const DARK = [30, 30, 30];
     const MID = [60, 60, 60];
     const MUTED = [110, 110, 110];
-    const LINK = [10, 100, 200];   // blue for clickable links only
+    const LINK = [10, 100, 200];
 
-    // ── Page-break guard ─────────────────────────────────────
     const checkPage = (need = 10) => {
-        if (y + need > 277) { doc.addPage(); y = 20; }
+        if (y + need > 285) { doc.addPage(); y = 10; }
     };
 
-    // ── Thin full-width rule ──────────────────────────────────
     const hRule = () => {
         doc.setDrawColor(...MUTED);
-        doc.setLineWidth(0.25);
+        doc.setLineWidth(0.2);
         doc.line(MARGIN, y, W - MARGIN, y);
-        y += 4;
+        y += 3.5; // Tightened from 4
     };
 
-    // ── Section heading ───────────────────────────────────────
     const sectionTitle = (title) => {
-        checkPage(14);
-        y += 5;
+        checkPage(12);
+        y += 3.5; // Tightened from 5
         doc.setFont("helvetica", "bold");
         doc.setFontSize(10);
         doc.setTextColor(...BLACK);
         doc.text(title.toUpperCase(), MARGIN, y);
-        y += 2;
+        y += 1.5;
         hRule();
     };
 
-    // ── Clickable hyperlink (blue, underlined, PDF annotation) ─
     const addLink = (text, url, x, linkY, fontSize) => {
         doc.setFont("helvetica", "normal");
         doc.setFontSize(fontSize);
@@ -66,88 +61,72 @@ async function generateAndDownloadPDF() {
         doc.text(text, x, linkY);
         const tw = doc.getTextWidth(text);
         doc.setDrawColor(...LINK);
-        doc.setLineWidth(0.2);
-        doc.line(x, linkY + 0.8, x + tw, linkY + 0.8);
+        doc.setLineWidth(0.15);
+        doc.line(x, linkY + 0.6, x + tw, linkY + 0.6);
         const lh = fontSize * 0.35;
-        doc.link(x, linkY - lh, tw, lh + 1.2, { url });
-        return tw;   // return width so caller can chain
+        doc.link(x, linkY - lh, tw, lh + 1, { url });
+        return tw;
     };
 
-    // ── Bullet line ───────────────────────────────────────────
     const bullet = (text, indent = 4) => {
-        checkPage(7);
+        checkPage(6);
         doc.setFont("helvetica", "normal");
-        doc.setFontSize(10);
+        doc.setFontSize(9.5);
         doc.setTextColor(...MID);
         doc.text("\u2022", MARGIN + indent, y);
         const lines = doc.splitTextToSize(text, CW - indent - 5);
         doc.text(lines, MARGIN + indent + 4, y);
-        y += lines.length * 5 + 0.5;
+        y += lines.length * 4.2 + 0.5; // Tightened line height
     };
 
-    // ═══════════════════════════════════════════════════════════
-    // HEADER
-    // ═══════════════════════════════════════════════════════════
+    // ── HEADER ──
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(16);
+    doc.setFontSize(18);
     doc.setTextColor(...BLACK);
     doc.text("MD. MUTTAKIUL ISLAM TUSER", W / 2, y, { align: "center" });
-    y += 6;
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.setTextColor(...DARK);
-    doc.text("Full-Stack Web Developer | MERN Stack | Frontend Specialist", W / 2, y, { align: "center" });
     y += 5.5;
 
-    // Contact line (plain text)
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9.5);
-    doc.setTextColor(...MUTED);
-    doc.text(
-        "tusermon720@gmail.com  |  +880 1760-049326  |  DSC, Asulia, Birulia, Dhaka-1216, Bangladesh",
-        W / 2, y, { align: "center" }
-    );
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(...DARK);
+    doc.text("Full-Stack Web Developer | MERN Stack | Frontend Focused", W / 2, y, { align: "center" });
     y += 5;
 
-    // Social links row — clickable, centred
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(...MUTED);
+    doc.text("tusermon720@gmail.com  |  +880 1760-049326  |  DSC, Asulia, Birulia, Dhaka-1216, Bangladesh", W / 2, y, { align: "center" });
+    y += 4.5;
+
     const socials = [
         { label: "Portfolio", url: "https://portfolio-live-site.vercel.app/" },
         { label: "GitHub", url: "https://github.com/tuser579" },
         { label: "LinkedIn", url: "https://www.linkedin.com/in/md-muttakiul-islam-tuser-36b104388" },
-        { label: "Twitter", url: "https://x.com/md_57990667" },
-        { label: "Facebook", url: "https://www.facebook.com/mohammad.osman.98622" },
     ];
 
     const sep = "  |  ";
-    doc.setFontSize(9.5);
+    doc.setFontSize(9);
     const sepW = doc.getTextWidth(sep);
-    const lWs = socials.map(s => { doc.setFontSize(9.5); return doc.getTextWidth(s.label); });
+    const lWs = socials.map(s => doc.getTextWidth(s.label));
     const totalW = lWs.reduce((a, b) => a + b, 0) + sepW * (socials.length - 1);
     let sx = (W - totalW) / 2;
 
     socials.forEach((s, i) => {
-        addLink(s.label, s.url, sx, y, 9.5);
+        addLink(s.label, s.url, sx, y, 9);
         sx += lWs[i];
         if (i < socials.length - 1) {
             doc.setFont("helvetica", "normal");
-            doc.setFontSize(9.5);
             doc.setTextColor(...MUTED);
             doc.text(sep, sx, y);
             sx += sepW;
         }
     });
-    y += 6;
+    y += 5;
 
-    hRule();
-
-    // ═══════════════════════════════════════════════════════════
-    // PROFESSIONAL SUMMARY
-    // ═══════════════════════════════════════════════════════════
-    sectionTitle("Professional Summary");
-
+    // ── CAREER OBJECTIVE ──
+    sectionTitle("Career Objective");
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
+    doc.setFontSize(9.5);
     doc.setTextColor(...MID);
     const summary =
         "A MERN-Stack Developer by passion, I started my coding journey with HTML, CSS, and JavaScript " +
@@ -158,189 +137,212 @@ async function generateAndDownloadPDF() {
         "goal is simple: build applications that are practical, meaningful, and delightful for users.";
     const sumLines = doc.splitTextToSize(summary, CW);
     doc.text(sumLines, MARGIN, y);
-    y += sumLines.length * 5 + 3;
+    y += sumLines.length * 3.3 + 2;
 
-    // ═══════════════════════════════════════════════════════════
-    // TECHNICAL SKILLS
-    // ═══════════════════════════════════════════════════════════
+    // ── TECHNICAL SKILLS ──
     sectionTitle("Technical Skills");
-
     const skillGroups = [
         ["Frontend Development", "HTML5, CSS3, Tailwind CSS, JavaScript (ES6+), React.js, Next.js"],
         ["Backend Development", "Node.js, Express.js"],
         ["Database", "MongoDB"],
-        ["Version Control & Deploy", "Git, GitHub, Firebase, Vercel, Netlify"],
-        ["Soft Skills", "Team Collaboration, Problem-Solving, Adaptability, Agile Mindset"],
+        ["Version Control & Deploy", "Git, GitHub, Netlify, Cloudflare, Surge, Firebase, Vercel, Railway, Render"],
+        ["Languages", "C, C++"],
+        ["Soft Skills", "Team Collaboration, Problem-Solving, Adaptability"],
     ];
 
     skillGroups.forEach(([label, value]) => {
-        checkPage(7);
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(10);
+        doc.setFontSize(9.5);
         doc.setTextColor(...DARK);
         const labelText = label + ":  ";
         const lw = doc.getTextWidth(labelText);
-        doc.text(labelText, MARGIN + 4, y);
+        doc.text(labelText, MARGIN + 2, y);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(...MID);
-        const valLines = doc.splitTextToSize(value, CW - 4 - lw);
-        doc.text(valLines, MARGIN + 4 + lw, y);
-        y += valLines.length * 5 + 0.5;
+        const valLines = doc.splitTextToSize(value, CW - 2 - lw);
+        doc.text(valLines, MARGIN + 2 + lw, y);
+        y += valLines.length * 4 + 0.5;
     });
-
-    y += 2;
 
     // ═══════════════════════════════════════════════════════════
     // PROJECTS
     // ═══════════════════════════════════════════════════════════
+
     sectionTitle("Projects");
-
-    projects.forEach((p) => {
+    projects.slice(0, 3).forEach((p) => {
         checkPage(38);
-
         // ── Project name (left) + links (right) on same line ──
         doc.setFont("helvetica", "bold");
         doc.setFontSize(10.5);
         doc.setTextColor(...DARK);
-        doc.text(p.name, MARGIN, y);
 
-        // Links top-right on same line as project name
+        const titleLabel = "Title: ";
+        const titleLabelWidth = doc.getTextWidth(titleLabel);
+
+        // Draw the "Title: " label
+        doc.text(titleLabel, MARGIN, y);
+        // Draw the actual Project Name immediately after the label
+        doc.setFont("helvetica", "bold"); // Keep bold or change to normal if preferred
+        doc.text(p.name, MARGIN + titleLabelWidth, y);
+
+        // Links logic...
         const liveLabel = "Live Demo";
         const separator = "   |   ";
         const repoLabel = "GitHub";
-
         doc.setFontSize(9.5);
         const repoTW = doc.getTextWidth(repoLabel);
         const sepTW = doc.getTextWidth(separator);
         const liveTW = doc.getTextWidth(liveLabel);
         const rowW = liveTW + sepTW + repoTW;
-
-        let rx = W - MARGIN - rowW;   // right-aligned start
+        let rx = W - MARGIN - rowW;
 
         addLink(liveLabel, p.liveLink, rx, y, 9.5);
         rx += liveTW;
-
         doc.setFont("helvetica", "normal");
-        doc.setFontSize(9.5);
         doc.setTextColor(...MUTED);
         doc.text(separator, rx, y);
         rx += sepTW;
 
         addLink(repoLabel, p.githubLink, rx, y, 9.5);
 
-        y += 5.5;
+        // Move Y down after title/links
+        y += 4;
 
-        // ── Short description as bullet ──
-        bullet(p.shortDescription);
+        // ── Overview (Standard Text, No Bullet) ──
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.setTextColor(...DARK);
+        const overviewLabel = "Overview: ";
+        const oLabelW = doc.getTextWidth(overviewLabel);
+        doc.text(overviewLabel, MARGIN, y);
+
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...MID);
+        // Split description to ensure it doesn't overflow horizontally
+        const overviewLines = doc.splitTextToSize(p.shortDescription, CW - oLabelW);
+        doc.text(overviewLines, MARGIN + oLabelW, y);
+
+        // Calculate space used by Overview and move Y down
+        // (Line height is approx 4-5 units)
+        y += (overviewLines.length * 3.3) + 1.5;
+
+        // ── Highlights (Max 3) ──
+        if (p.highlights && Array.isArray(p.highlights)) {
+            // Reset character spacing to 0 to fix the stretching error in the screenshot
+            doc.setCharSpace(0);
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(...MID);
+            doc.setFontSize(9);
+
+            p.highlights.slice(0, 3).forEach((highlight) => {
+                checkPage(6);
+
+                // Render the bullet
+                bullet(highlight);
+
+                // Force Y increment if your bullet function doesn't do it automatically
+                // y += 4.5; 
+            });
+
+        }
+
+
+
+        // Add a small gap before Tech stack if bullets didn't add one
+        y += 2;
+
+
 
         // ── Tech stack ──
-        checkPage(7);
+        checkPage(10);
         doc.setFont("helvetica", "bold");
         doc.setFontSize(9.5);
         doc.setTextColor(...DARK);
+
         const techLabel = "Technologies:  ";
         const tlw = doc.getTextWidth(techLabel);
         doc.text(techLabel, MARGIN + 4, y);
+
         doc.setFont("helvetica", "normal");
         doc.setTextColor(...MID);
         const techStack = p.techStack.slice(0, 5).join(", ");
         const techLines = doc.splitTextToSize(techStack, CW - 4 - tlw);
         doc.text(techLines, MARGIN + 4 + tlw, y);
-        y += techLines.length * 5 + 5;
+
+        y += (techLines.length * 5) + 2; // Move Y for the next project
+
     });
 
-    // ═══════════════════════════════════════════════════════════
-    // EDUCATION
-    // ═══════════════════════════════════════════════════════════
-    sectionTitle("Education");
-    checkPage(22);
 
+    // ── PROBLEM SOLVING ──
+    sectionTitle("Problem Solving");
+    const problemSolvingData = [
+        { platform: "Codeforces", count: "  500 Solved", url: "https://codeforces.com/profile/Tu.ser" },
+        { platform: "CodeChef", count: "  508 Solved", url: "https://www.codechef.com/users/tuser579" },
+        { platform: "LeetCode", count: "  131 Solved", url: "https://leetcode.com/u/tuser579/" },
+        { platform: "Beecrowd", count: "  164 Solved", url: "https://judge.beecrowd.com/en/profile/948665" }
+    ];
+
+    problemSolvingData.forEach((item) => {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9.5);
+        doc.setTextColor(...DARK);
+        const pLabel = `${item.platform}: `;
+        doc.text(pLabel, MARGIN, y);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...MID);
+        doc.text(item.count, MARGIN + doc.getTextWidth(pLabel), y);
+        const linkLabel = "Profile Link";
+        const lW = doc.getTextWidth(linkLabel);
+        addLink(linkLabel, item.url, W - MARGIN - lW, y, 9);
+        y += 4.5;
+    });
+
+    // ── EDUCATION ──
+    sectionTitle("Education");
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(10.5);
-    doc.setTextColor(...DARK);
-    doc.text("Bachelor of Science in Computer Science and Engineering (CSE)", MARGIN, y);
-    doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
+    doc.setTextColor(...DARK);
+    doc.text("B.Sc in Computer Science and Engineering", MARGIN, y);
+    doc.setFont("helvetica", "normal");
     doc.setTextColor(...MUTED);
     doc.text("2024 – Present", W - MARGIN, y, { align: "right" });
-    y += 5.5;
-
+    y += 4.5;
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
     doc.setTextColor(...MID);
-    doc.text("Daffodil International University (DIU)  —  DSC, Asulia, Birulia, Dhaka-1216", MARGIN, y);
-    y += 5.5;
+    doc.text("Daffodil International University (DIU), Dhaka", MARGIN, y);
+    y += 5;
 
-    bullet("Pursuing coursework in Data Structures, Algorithms, Database Systems, and Software Engineering.");
-    bullet("Actively developing full-stack web projects as practical application of academic learning.");
-
-    y += 20;
-
-
-    // ═══════════════════════════════════════════════════════════
-    // CERTIFICATIONS & COMPETITIONS
-    // ═══════════════════════════════════════════════════════════
-    sectionTitle("Achieved Certifications");
-    certifications.forEach((cert) => {
-        checkPage(22);
-
-        // Title (bold) + Date (right)
+   // ── CERTIFICATIONS ──
+    sectionTitle("Certifications");
+    certifications.slice(0, 2).forEach((cert) => {
+        // 1. RESET COLOR AT START OF EACH ROW
+        doc.setTextColor(...DARK); 
+        
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(10.5);
-        doc.setTextColor(...DARK);
-        doc.text(cert.title, MARGIN, y);
-
+        const iss = `${cert.issuer}:   `;
+        doc.text(iss, MARGIN, y);
+        
         doc.setFont("helvetica", "normal");
-        doc.setFontSize(10);
-        doc.setTextColor(...MUTED);
-        doc.text(cert.date, W - MARGIN, y, { align: "right" });
-        y += 5;
-
-        // Issuer — plain muted text
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(10);
-        doc.setTextColor(...MUTED);
-        doc.text(cert.issuer, MARGIN, y);
-
-        // Credential link (right side, same line as issuer) — only if URL exists
+        // Maintain the dark color for the description
+        doc.setTextColor(...MID); 
+        
+        const dLines = doc.splitTextToSize(cert.description, CW - doc.getTextWidth(iss) - 25);
+        doc.text(dLines, MARGIN + doc.getTextWidth(iss), y);
+        
+        // 2. ADD LINK (This changes the "pen" color to blue internally)
         if (cert.credentialUrl) {
-            const credLabel = "View Credential";
-            doc.setFontSize(9.5);
-            const credW = doc.getTextWidth(credLabel);
-            addLink(credLabel, cert.credentialUrl, W - MARGIN - credW, y, 9.5);
+            const linkLabel = "View";
+            const linkW = doc.getTextWidth(linkLabel);
+            addLink(linkLabel, cert.credentialUrl, W - MARGIN - linkW, y, 9);
         }
-        y += 5.5;
-
-        // Description bullet
-        bullet(cert.description);
-
-        y += 2;
+        
+        y += dLines.length * 3.5 + 1.5;
     });
 
-    // ═══════════════════════════════════════════════════════════
-    // LANGUAGES
-    // ═══════════════════════════════════════════════════════════
     sectionTitle("Languages");
-    checkPage(14);
+    bullet("Bengali (Native), English (Intermediate)", 2);
 
-    bullet("Bengali — Native proficiency");
-    bullet("English — Intermediate proficiency");
-
-    y += 3;
-
-    // ═══════════════════════════════════════════════════════════
-    // ADDITIONAL INFORMATION
-    // ═══════════════════════════════════════════════════════════
-    sectionTitle("Additional Information");
-    checkPage(18);
-
-    bullet("Open to remote and full-stack development fronted focused roles.");
-    bullet("Continuously improving skills through personal projects, online courses, and open-source contributions.");
-    bullet("Available for internships, freelance engagements, and full-time junior developer positions.");
-
-    // ═══════════════════════════════════════════════════════════
-    // SAVE
-    // ═══════════════════════════════════════════════════════════
     doc.save("MD_Muttakiul_Islam_Tuser_Resume.pdf");
 }
 
@@ -412,7 +414,7 @@ const ResumeModal = ({ onClose }) => (
                     {/* Header */}
                     <div className="text-center pb-4 border-b border-border/40">
                         <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-1">MD. MUTTAKIUL ISLAM TUSER</h2>
-                        <p className="text-primary font-mono text-sm font-semibold mb-2">Full-Stack Web Developer | MERN Stack | Frontend Specialist</p>
+                        <p className="text-primary font-mono text-sm font-semibold mb-2">Full-Stack Web Developer | MERN Stack | Frontend Focused</p>
                         <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
                             <span>tusermon720@gmail.com</span>
                             <span>+8801760049326</span>
@@ -450,7 +452,8 @@ const ResumeModal = ({ onClose }) => (
                                 { label: "Backend", value: "Node.js, Express.js" },
                                 { label: "Database", value: "MongoDB" },
                                 { label: "Version Control & Deploy", value: "Git, GitHub, Firebase, Vercel, Netlify" },
-                                { label: "Soft Skills", value: "Team collaboration, problem-solving, adaptability" },
+                                { label: "Languages", value: "C, C++" },
+                                { label: "Soft Skills", value: "Team collaboration, Problem-solving, Adaptability" },
                             ].map(({ label, value }) => (
                                 <div key={label} className="glass-card rounded-lg p-3 border border-border/40">
                                     <p className="text-[10px] font-bold uppercase tracking-wider text-primary/70 mb-1">{label}</p>
@@ -502,6 +505,78 @@ const ResumeModal = ({ onClose }) => (
                                         ))}
                                     </div>
                                 </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Problem Solving */}
+                    <div>
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-primary mb-4 font-mono">Problem Solving</h3>
+                        <div className="flex flex-col gap-3">
+                            {[
+                                {
+                                    platform: "Codeforces",
+                                    count: 500,
+                                    label: "Problems Solved",
+                                    profile: "https://codeforces.com/profile/Tu.ser",
+                                    color: "text-blue-400",
+                                    border: "border-blue-400/20 hover:border-blue-400/50",
+                                    bg: "hover:bg-blue-400/5",
+                                },
+                                {
+                                    platform: "CodeChef",
+                                    count: 508,
+                                    label: "Problems Solved",
+                                    profile: "https://www.codechef.com/users/tuser579",
+                                    color: "text-amber-400",
+                                    border: "border-amber-400/20 hover:border-amber-400/50",
+                                    bg: "hover:bg-amber-400/5",
+                                },
+                                {
+                                    platform: "LeetCode",
+                                    count: 131,
+                                    label: "Problems Solved",
+                                    profile: "https://leetcode.com/u/tuser579/",
+                                    color: "text-orange-400",
+                                    border: "border-orange-400/20 hover:border-orange-400/50",
+                                    bg: "hover:bg-orange-400/5",
+                                },
+                                {
+                                    platform: "Beecrowd",
+                                    count: 164,
+                                    label: "Problems Solved",
+                                    profile: "https://judge.beecrowd.com/en/profile/948665",
+                                    color: "text-green-400",
+                                    border: "border-green-400/20 hover:border-green-400/50",
+                                    bg: "hover:bg-green-400/5",
+                                },
+                            ].map(({ platform, count, label, profile, color, border, bg }) => (
+                                <a
+                                    key={platform}
+                                    href={profile}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={`glass-card flex items-center justify-between p-4 rounded-xl border transition-all duration-300 group ${border} ${bg}`}
+                                >
+                                    {/* Left Side: Platform & Label */}
+                                    <div className="flex flex-col">
+                                        <span className={`font-bold sm:text-base tracking-wide ${color}`}>{platform}</span>
+                                        {/* <span className="text-xs text-muted-foreground mt-0.5">{label}</span> */}
+                                    </div>
+
+                                    {/* Right Side: Count & Arrow */}
+                                    <div className="flex items-center gap-4">
+                                        <span className="font-mono text-xl sm:text-xl font-black text-foreground">{count}</span>
+                                        <svg
+                                            className={`w-4 h-4 ${color} opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300`}
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                            stroke="currentColor"
+                                        >
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                        </svg>
+                                    </div>
+                                </a>
                             ))}
                         </div>
                     </div>
@@ -578,7 +653,7 @@ const ResumeModal = ({ onClose }) => (
                 </div>
             </motion.div>
         </motion.div>
-    </AnimatePresence>
+    </AnimatePresence >
 );
 
 // ─────────────────────────────────────────────────────────────
@@ -624,7 +699,7 @@ const Hero = () => {
 
                             <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
                                 className="text-lg sm:text-xl text-muted-foreground mb-2 font-mono">
-                                MERN Stack Developer
+                                Full MERN Stack Developer | Fronted Focused
                             </motion.p>
 
                             <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
