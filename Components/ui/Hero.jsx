@@ -24,7 +24,7 @@ async function generateAndDownloadPDF() {
     const W = 210;
     const MARGIN = 18; // Slightly tighter margin to gain vertical space
     const CW = W - MARGIN * 2;
-    let y = 10;
+    let y = 20;
 
     const BLACK = [0, 0, 0];
     const DARK = [30, 30, 30];
@@ -33,24 +33,24 @@ async function generateAndDownloadPDF() {
     const LINK = [10, 100, 200];
 
     const checkPage = (need = 10) => {
-        if (y + need > 285) { doc.addPage(); y = 10; }
+        if (y + need > 279) { doc.addPage(); y = 18; }
     };
 
     const hRule = () => {
         doc.setDrawColor(...MUTED);
         doc.setLineWidth(0.2);
         doc.line(MARGIN, y, W - MARGIN, y);
-        y += 3.5; // Tightened from 4
+        y += 2.8; // Tightened from 4
     };
 
     const sectionTitle = (title) => {
         checkPage(12);
-        y += 3.5; // Tightened from 5
+        y += 3.0; // Tightened from 5
         doc.setFont("helvetica", "bold");
         doc.setFontSize(10);
         doc.setTextColor(...BLACK);
         doc.text(title.toUpperCase(), MARGIN, y);
-        y += 1.5;
+        y += 1.3;
         hRule();
     };
 
@@ -72,11 +72,11 @@ async function generateAndDownloadPDF() {
         checkPage(6);
         doc.setFont("helvetica", "normal");
         doc.setFontSize(9.5);
-        doc.setTextColor(...MID);
+        doc.setTextColor(...BLACK);
         doc.text("\u2022", MARGIN + indent, y);
         const lines = doc.splitTextToSize(text, CW - indent - 5);
         doc.text(lines, MARGIN + indent + 4, y);
-        y += lines.length * 4.2 + 0.5; // Tightened line height
+        y += lines.length * 3.4 + 0.5; // Tightened line height
     };
 
     // ── HEADER ──
@@ -84,17 +84,17 @@ async function generateAndDownloadPDF() {
     doc.setFontSize(18);
     doc.setTextColor(...BLACK);
     doc.text("MD. MUTTAKIUL ISLAM TUSER", W / 2, y, { align: "center" });
-    y += 5.5;
+    y += 5.0;
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
-    doc.setTextColor(...DARK);
+    doc.setTextColor(...BLACK);
     doc.text("Full-Stack Web Developer | MERN Stack | Frontend Focused", W / 2, y, { align: "center" });
-    y += 5;
+    y += 4.5;
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
-    doc.setTextColor(...MUTED);
+    doc.setTextColor(...BLACK);
     doc.text("tusermon720@gmail.com  |  +880 1760-049326  |  DSC, Asulia, Birulia, Dhaka-1216, Bangladesh", W / 2, y, { align: "center" });
     y += 4.5;
 
@@ -127,7 +127,7 @@ async function generateAndDownloadPDF() {
     sectionTitle("Career Objective");
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9.5);
-    doc.setTextColor(...MID);
+    doc.setTextColor(...BLACK);
     const summary =
         "A MERN-Stack Developer by passion, I started my coding journey with HTML, CSS, and JavaScript " +
         "before diving deep into React, Next.js Node.js, Express.js, and MongoDB. Through car rental   " +
@@ -137,7 +137,7 @@ async function generateAndDownloadPDF() {
         "goal is simple: build applications that are practical, meaningful, and delightful for users.";
     const sumLines = doc.splitTextToSize(summary, CW);
     doc.text(sumLines, MARGIN, y);
-    y += sumLines.length * 3.3 + 2;
+    y += sumLines.length * 3.5 + 2;
 
     // ── TECHNICAL SKILLS ──
     sectionTitle("Technical Skills");
@@ -153,12 +153,12 @@ async function generateAndDownloadPDF() {
     skillGroups.forEach(([label, value]) => {
         doc.setFont("helvetica", "bold");
         doc.setFontSize(9.5);
-        doc.setTextColor(...DARK);
+        doc.setTextColor(...BLACK);
         const labelText = label + ":  ";
         const lw = doc.getTextWidth(labelText);
         doc.text(labelText, MARGIN + 2, y);
         doc.setFont("helvetica", "normal");
-        doc.setTextColor(...MID);
+        doc.setTextColor(...BLACK);
         const valLines = doc.splitTextToSize(value, CW - 2 - lw);
         doc.text(valLines, MARGIN + 2 + lw, y);
         y += valLines.length * 4 + 0.5;
@@ -174,7 +174,7 @@ async function generateAndDownloadPDF() {
         // ── Project name (left) + links (right) on same line ──
         doc.setFont("helvetica", "bold");
         doc.setFontSize(10.5);
-        doc.setTextColor(...DARK);
+        doc.setTextColor(...BLACK);
 
         const titleLabel = "Title: ";
         const titleLabelWidth = doc.getTextWidth(titleLabel);
@@ -211,13 +211,13 @@ async function generateAndDownloadPDF() {
         // ── Overview (Standard Text, No Bullet) ──
         doc.setFont("helvetica", "bold");
         doc.setFontSize(10);
-        doc.setTextColor(...DARK);
+        doc.setTextColor(...BLACK);
         const overviewLabel = "Overview: ";
         const oLabelW = doc.getTextWidth(overviewLabel);
         doc.text(overviewLabel, MARGIN, y);
 
         doc.setFont("helvetica", "normal");
-        doc.setTextColor(...MID);
+        doc.setTextColor(...BLACK);
         // Split description to ensure it doesn't overflow horizontally
         const overviewLines = doc.splitTextToSize(p.shortDescription, CW - oLabelW);
         doc.text(overviewLines, MARGIN + oLabelW, y);
@@ -231,7 +231,7 @@ async function generateAndDownloadPDF() {
             // Reset character spacing to 0 to fix the stretching error in the screenshot
             doc.setCharSpace(0);
             doc.setFont("helvetica", "normal");
-            doc.setTextColor(...MID);
+            doc.setTextColor(...BLACK);
             doc.setFontSize(9);
 
             p.highlights.slice(0, 3).forEach((highlight) => {
@@ -246,25 +246,21 @@ async function generateAndDownloadPDF() {
 
         }
 
-
-
         // Add a small gap before Tech stack if bullets didn't add one
         y += 2;
-
-
 
         // ── Tech stack ──
         checkPage(10);
         doc.setFont("helvetica", "bold");
         doc.setFontSize(9.5);
-        doc.setTextColor(...DARK);
+        doc.setTextColor(...BLACK);
 
         const techLabel = "Technologies:  ";
         const tlw = doc.getTextWidth(techLabel);
         doc.text(techLabel, MARGIN + 4, y);
 
         doc.setFont("helvetica", "normal");
-        doc.setTextColor(...MID);
+        doc.setTextColor(...BLACK);
         const techStack = p.techStack.slice(0, 5).join(", ");
         const techLines = doc.splitTextToSize(techStack, CW - 4 - tlw);
         doc.text(techLines, MARGIN + 4 + tlw, y);
@@ -286,11 +282,11 @@ async function generateAndDownloadPDF() {
     problemSolvingData.forEach((item) => {
         doc.setFont("helvetica", "bold");
         doc.setFontSize(9.5);
-        doc.setTextColor(...DARK);
+        doc.setTextColor(...BLACK);
         const pLabel = `${item.platform}: `;
         doc.text(pLabel, MARGIN, y);
         doc.setFont("helvetica", "normal");
-        doc.setTextColor(...MID);
+        doc.setTextColor(...BLACK);
         doc.text(item.count, MARGIN + doc.getTextWidth(pLabel), y);
         const linkLabel = "Profile Link";
         const lW = doc.getTextWidth(linkLabel);
@@ -302,14 +298,14 @@ async function generateAndDownloadPDF() {
     sectionTitle("Education");
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
-    doc.setTextColor(...DARK);
+    doc.setTextColor(...BLACK);
     doc.text("B.Sc in Computer Science and Engineering", MARGIN, y);
     doc.setFont("helvetica", "normal");
-    doc.setTextColor(...MUTED);
+    doc.setTextColor(...BLACK);
     doc.text("2024 – Present", W - MARGIN, y, { align: "right" });
     y += 4.5;
     doc.setFont("helvetica", "normal");
-    doc.setTextColor(...MID);
+    doc.setTextColor(...BLACK);
     doc.text("Daffodil International University (DIU), Dhaka", MARGIN, y);
     y += 5;
 
@@ -317,7 +313,7 @@ async function generateAndDownloadPDF() {
     sectionTitle("Certifications");
     certifications.slice(0, 2).forEach((cert) => {
         // 1. RESET COLOR AT START OF EACH ROW
-        doc.setTextColor(...DARK); 
+        doc.setTextColor(...BLACK); 
         
         doc.setFont("helvetica", "bold");
         const iss = `${cert.issuer}:   `;
@@ -325,7 +321,7 @@ async function generateAndDownloadPDF() {
         
         doc.setFont("helvetica", "normal");
         // Maintain the dark color for the description
-        doc.setTextColor(...MID); 
+        doc.setTextColor(...BLACK); 
         
         const dLines = doc.splitTextToSize(cert.description, CW - doc.getTextWidth(iss) - 25);
         doc.text(dLines, MARGIN + doc.getTextWidth(iss), y);
@@ -341,7 +337,8 @@ async function generateAndDownloadPDF() {
     });
 
     sectionTitle("Languages");
-    bullet("Bengali (Native), English (Intermediate)", 2);
+    bullet("Bengali (Native)", 2);
+    bullet("English (Intermediate)", 2);
 
     doc.save("MD_Muttakiul_Islam_Tuser_Resume.pdf");
 }
