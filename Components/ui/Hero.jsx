@@ -142,9 +142,9 @@ async function generateAndDownloadPDF() {
     // ── TECHNICAL SKILLS ──
     sectionTitle("Technical Skills");
     const skillGroups = [
-        ["Frontend Development", "HTML5, CSS3, Tailwind CSS, JavaScript (ES6+), React.js, Next.js"],
+        ["Frontend Development", "HTML5, CSS3, Tailwind CSS, JavaScript (ES6+), TypeScript, React.js, Next.js"],
         ["Backend Development", "Node.js, Express.js"],
-        ["Database", "MongoDB"],
+        ["Database", "MongoDB, MySQL"],
         ["Version Control & Deploy", "Git, GitHub, Netlify, Cloudflare, Surge, Firebase, Vercel, Railway, Render"],
         ["Languages", "C, C++"],
         ["Soft Skills", "Team Collaboration, Problem-Solving, Adaptability"],
