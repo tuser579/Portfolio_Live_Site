@@ -8,7 +8,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import profilePhoto from "../../public/Gemini_Generated_Image_kkbq5akkbq5akkbq.png";
+import profilePhoto from "../../public/lustro-Gemini_Generated_Image_kkbq5akkbq5akkbq.png";
 import { projects } from "../../data/portfolio";
 import { certifications } from "../../data/portfolio";
 
