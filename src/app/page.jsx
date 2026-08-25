@@ -6,6 +6,7 @@ import About from "../../Components/ui/About";
 import Skills from "../../Components/ui/Skills";
 import ExperienceEducation from "../../Components/ui/Experienceeducation";
 import Projects from "../../Components/ui/Projects";
+import GithubStats from "../../Components/ui/GithubStats";
 import Contact from "../../Components/ui/Contact";
 import Footer from "../../Components/ui/Footer";
 import CertificationsSection from "../../Components/ui/CertificationsSection";
@@ -21,6 +22,7 @@ export default function Home() {
         <ProblemSolving />
         <Skills />
         <Projects />
+        <GithubStats />
         <ExperienceEducation />
         <CertificationsSection />
         <Contact />

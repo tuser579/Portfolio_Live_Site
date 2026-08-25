@@ -2,100 +2,67 @@
 
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
-import { Briefcase, GraduationCap } from "lucide-react";
-import { experiences, education } from "../../data/portfolio";
+import { GraduationCap } from "lucide-react";
+import { education } from "../../data/portfolio";
 
-const ExperienceEducation = () => {
+export default function ExperienceEducation() {
   const ref    = useRef(null);
-  const inView = useInView(ref, { once: true, margin: "-100px" });
+  const inView = useInView(ref, { once: true, margin: "-80px" });
 
   return (
-    // <section id="experience" className="section-padding" ref={ref}>
     <section id="education" className="section-padding" ref={ref}>
-      <div className="container mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6 }}
-        >
-          {/* ── Heading ── */}
-          {/* <h2 className="text-3xl md:text-4xl font-bold mb-12 text-center">
-            Experience &amp; <span className="text-gradient">Education</span>
-          </h2> */}
+      <div className="site-container">
 
-          <h2 className="text-3xl md:text-4xl font-bold mb-12 text-center">
-            My <span className="text-gradient">Education</span>
-          </h2>
-
-          {/* ── Two-column grid ── */}
-          {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-8"> */}
-          <div className="grid grid-cols-1  gap-8">
-
-            {/* ── Experience ── */}
-            {/* <div>
-              <div className="flex items-center gap-2 mb-6">
-                <Briefcase className="w-5 h-5 text-primary" />
-                <h3 className="text-xl font-bold text-foreground">Experience</h3>
-              </div>
-              <div className="space-y-6">
-                {experiences.map((exp, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={inView ? { opacity: 1, y: 0 } : {}}
-                    transition={{ delay: i * 0.15, duration: 0.5 }}
-                    className="glass-card rounded-xl p-5 sm:p-6 relative border-l-2 border-primary"
-                  >
-                    <span className="font-mono text-xs text-primary">{exp.duration}</span>
-                    <h4 className="font-bold text-foreground mt-1 text-sm sm:text-base">
-                      {exp.role}
-                    </h4>
-                    <p className="text-muted-foreground text-sm">{exp.company}</p>
-                    <p className="text-foreground/80 text-sm mt-2">{exp.description}</p>
-                    <ul className="mt-3 space-y-1">
-                      {exp.highlights.map((h) => (
-                        <li key={h} className="text-xs text-muted-foreground flex gap-2">
-                          <span className="text-primary shrink-0">▹</span>
-                          {h}
-                        </li>
-                      ))}
-                    </ul>
-                  </motion.div>
-                ))}
-              </div>
-            </div> */}
-
-            {/* ── Education ── */}
-            <div>
-              {/* <div className="flex items-center gap-2 mb-6"> */}
-                {/* <GraduationCap className="w-5 h-5 text-primary" /> */}
-                {/* <h3 className="text-xl font-bold text-foreground">Education</h3> */}
-              {/* </div> */}
-              <div className="space-y-6">
-                {education.map((edu, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={inView ? { opacity: 1, y: 0 } : {}}
-                    transition={{ delay: i * 0.15 + 0.2, duration: 0.5 }}
-                    className="glass-card rounded-xl p-5 sm:p-6 relative border-l-2 border-primary"
-                  >
-                    <span className="font-mono text-xs text-primary">{edu.duration}</span>
-                    <h4 className="font-bold text-foreground mt-1 text-sm sm:text-base">
-                      {edu.degree}
-                    </h4>
-                    <p className="text-muted-foreground text-sm">{edu.institution}</p>
-                    <p className="text-foreground/80 text-sm mt-2">{edu.description}</p>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-
-          </div>
+        {/* Heading */}
+        <motion.div initial={{ opacity: 0, y: 30 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.6 }} style={{ textAlign: "center", marginBottom: "3.5rem" }}>
+          <h2 className="section-title">My <span className="text-gradient">Education</span></h2>
+          <div className="section-line" />
         </motion.div>
+
+        {/* Timeline */}
+        <div style={{ position: "relative", paddingLeft: "3rem" }}>
+          {/* Vertical line */}
+          <div style={{ position: "absolute", left: "1.1rem", top: 0, bottom: 0, width: 2, background: "linear-gradient(180deg, #00d4ff, #7c3aed, transparent)", boxShadow: "0 0 8px rgba(0,212,255,0.4)", borderRadius: 9999 }} />
+
+          {education.map((edu, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, x: -30 }}
+              animate={inView ? { opacity: 1, x: 0 } : {}}
+              transition={{ delay: i * 0.15 + 0.2, duration: 0.6 }}
+              style={{ position: "relative", marginBottom: "2rem" }}
+            >
+              {/* Node dot */}
+              <div style={{
+                position: "absolute", left: "-2.35rem", top: "1.4rem",
+                width: 18, height: 18, borderRadius: "50%",
+                background: "linear-gradient(135deg, #00d4ff, #7c3aed)",
+                boxShadow: "0 0 0 4px rgba(0,212,255,0.15), 0 0 16px rgba(0,212,255,0.4)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <GraduationCap size={9} style={{ color: "#fff" }} />
+              </div>
+
+              {/* Card */}
+              <div style={{
+                background: "var(--glass-bg)", backdropFilter: "blur(20px)",
+                WebkitBackdropFilter: "blur(20px)", border: "1px solid var(--glass-border)",
+                borderLeft: "3px solid var(--cyan)", borderRadius: "0 16px 16px 0",
+                padding: "1.25rem 1.5rem",
+                transition: "all 0.3s", boxShadow: "var(--glow-card)",
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "0.4rem", marginBottom: "0.5rem" }}>
+                  <h4 style={{ fontFamily: "'Outfit',sans-serif", fontWeight: 700, color: "var(--text-primary)", fontSize: "1rem" }}>{edu.degree}</h4>
+                  <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.7rem", color: "var(--cyan)", background: "rgba(0,212,255,0.12)", border: "1px solid rgba(0,212,255,0.3)", padding: "0.2rem 0.65rem", borderRadius: 9999, fontWeight: 600 }}>{edu.duration}</span>
+                </div>
+                <p style={{ color: "var(--violet)", fontFamily: "'Inter',sans-serif", fontSize: "0.85rem", fontWeight: 600, marginBottom: "0.5rem" }}>{edu.institution}</p>
+                <p style={{ color: "var(--text-secondary)", fontSize: "0.82rem", lineHeight: 1.65 }}>{edu.description}</p>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
       </div>
     </section>
   );
-};
-
-export default ExperienceEducation;
+}

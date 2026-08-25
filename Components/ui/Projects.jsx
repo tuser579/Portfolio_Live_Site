@@ -7,15 +7,134 @@ import Link from "next/link";
 import Image from "next/image";
 import { projects } from "../../data/portfolio";
 
+const CARD_GLOWS = ["#00d4ff", "#7c3aed", "#f0abfc", "#10b981"];
 const ITEMS_PER_PAGE = 3;
 
-const Projects = () => {
+function ProjectCard({ project, index, inView }) {
+  const glow = CARD_GLOWS[index % CARD_GLOWS.length];
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 35 }}
+      animate={inView ? { opacity: 1, y: 0 } : {}}
+      transition={{ delay: index * 0.12, duration: 0.6 }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        position: "relative",
+        background: "var(--glass-bg)",
+        backdropFilter: "blur(28px) saturate(180%)",
+        WebkitBackdropFilter: "blur(28px) saturate(180%)",
+        borderRadius: 20,
+        overflow: "hidden",
+        border: hovered ? `1px solid ${glow}55` : "1px solid var(--glass-border)",
+        boxShadow: hovered
+          ? `0 20px 60px ${glow}25, 0 0 0 1px ${glow}20`
+          : "var(--glow-card)",
+        transform: hovered ? "translateY(-6px)" : "translateY(0)",
+        transition: "all 0.35s cubic-bezier(0.4,0,0.2,1)",
+        display: "flex", flexDirection: "column",
+      }}
+    >
+      {/* Top gradient bar */}
+      <div style={{ height: 3, background: `linear-gradient(90deg, transparent, ${glow}, transparent)`, opacity: hovered ? 1 : 0.4, transition: "opacity 0.3s" }} />
+
+      {/* Thumbnail */}
+      <div style={{ position: "relative", aspectRatio: "16/9", overflow: "hidden" }}>
+        <Image
+          src={project.image}
+          alt={project.name}
+          fill
+          className="object-cover"
+          sizes="(max-width:640px) 100vw, (max-width:1024px) 50vw, 33vw"
+          style={{
+            transform: hovered ? "scale(1.06)" : "scale(1)",
+            transition: "transform 0.6s cubic-bezier(0.4,0,0.2,1)",
+            filter: hovered ? "brightness(1)" : "brightness(0.92)",
+          }}
+        />
+        {/* Shimmer overlay */}
+        <div style={{
+          position: "absolute", inset: 0,
+          background: hovered
+            ? `linear-gradient(135deg, ${glow}15, transparent 60%)`
+            : "transparent",
+          transition: "background 0.4s",
+          pointerEvents: "none",
+        }} />
+      </div>
+
+      {/* Card body */}
+      <div style={{ padding: "1.1rem 1.2rem", flex: 1, display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+        <h3 style={{ fontFamily: "'Outfit',sans-serif", fontWeight: 700, color: hovered ? glow : "var(--text-primary)", fontSize: "1rem", lineHeight: 1.3, transition: "color 0.3s" }}>
+          {project.name}
+        </h3>
+        <p style={{ color: "var(--text-secondary)", fontSize: "0.82rem", lineHeight: 1.65, flex: 1 }}>
+          {project.shortDescription}
+        </p>
+
+        {/* Tech badges */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem" }}>
+          {project.techStack.slice(0, 4).map((tech) => (
+            <span key={tech} style={{
+              fontSize: "0.65rem", padding: "0.18rem 0.55rem", borderRadius: 9999,
+              background: `${glow}12`, border: `1px solid ${glow}35`,
+              color: glow, fontFamily: "'JetBrains Mono',monospace", letterSpacing: "0.03em",
+            }}>
+              {tech}
+            </span>
+          ))}
+        </div>
+
+        {/* Action buttons */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginTop: "auto" }}>
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <a href={project.liveLink} target="_blank" rel="noopener noreferrer"
+              style={{
+                flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
+                padding: "0.5rem 0.75rem", borderRadius: 10, fontSize: "0.78rem", fontWeight: 600,
+                background: `linear-gradient(135deg, ${glow}, ${glow === "#00d4ff" ? "#7c3aed" : glow}bb)`,
+                color: "#fff", textDecoration: "none", transition: "all 0.25s",
+                boxShadow: `0 4px 14px ${glow}30`,
+              }}>
+              <ExternalLink size={13} /> Live
+            </a>
+            <a href={project.githubLink} target="_blank" rel="noopener noreferrer"
+              style={{
+                flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
+                padding: "0.5rem 0.75rem", borderRadius: 10, fontSize: "0.78rem", fontWeight: 600,
+                background: "var(--glass-bg)", border: "1px solid var(--glass-border)",
+                color: "var(--text-primary)", textDecoration: "none", transition: "all 0.25s",
+              }}>
+              <Github size={13} /> GitHub
+            </a>
+          </div>
+          <Link href={`/project/${project.id}`}
+            style={{
+              display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
+              padding: "0.55rem", borderRadius: 10, fontSize: "0.78rem", fontWeight: 600,
+              border: `1px solid ${glow}40`, color: glow, textDecoration: "none",
+              transition: "all 0.25s", background: "transparent",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = `${glow}12`; e.currentTarget.style.borderColor = `${glow}70`; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = `${glow}40`; }}
+          >
+            View Details <ArrowRight size={13} />
+          </Link>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+export default function Projects() {
   const ref    = useRef(null);
-  const inView = useInView(ref, { once: true, margin: "-100px" });
+  const inView = useInView(ref, { once: true, margin: "-80px" });
   const [page, setPage] = useState(1);
 
-  const totalPages  = Math.ceil(projects.length / ITEMS_PER_PAGE);
-  const paginated   = projects.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(projects.length / ITEMS_PER_PAGE);
+  const paginated  = projects.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
   const goTo = (p) => {
     setPage(p);
@@ -24,154 +143,67 @@ const Projects = () => {
 
   return (
     <section id="projects" className="section-padding" ref={ref}>
-      <div className="container mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div className="site-container">
+
+        {/* Heading */}
         <motion.div
-          initial={{ opacity: 0, y: 40 }}
+          initial={{ opacity: 0, y: 30 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6 }}
+          style={{ textAlign: "center", marginBottom: "3.5rem" }}
         >
-          {/* ── Heading ── */}
-          <h2 className="text-3xl md:text-4xl font-bold mb-12 text-center">
+          <h2 className="section-title">
             My <span className="text-gradient">Projects</span>
           </h2>
-        
-          {/* ── Project Grid ── */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {paginated.map((project, i) => (
-              <motion.div
-                key={project.id}
-                initial={{ opacity: 0, y: 30 }}
-                animate={inView ? { opacity: 1, y: 0 } : {}}
-                transition={{ delay: i * 0.15, duration: 0.5 }}
-                className="glass-card rounded-2xl overflow-hidden hover-lift group flex flex-col"
-              >
-                {/* ── Thumbnail ── */}
-                <div className="relative aspect-video overflow-hidden">
-                  <Image
-                    src={project.image}
-                    alt={project.name}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-500"
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                  />
-                </div>
-
-                {/* ── Card Body ── */}
-                <div className="p-4 sm:p-5 flex flex-col flex-1">
-                  <h3 className="font-bold text-foreground text-base sm:text-lg mb-1">
-                    {project.name}
-                  </h3>
-                  <p className="text-muted-foreground text-sm mb-3 line-clamp-2 flex-1">
-                    {project.shortDescription}
-                  </p>
-
-                  {/* ── Tech Badges ── */}
-                  <div className="flex flex-wrap gap-1.5 mb-4">
-                    {project.techStack.slice(0, 4).map((tech) => (
-                      <span
-                        key={tech}
-                        className="text-xs px-2 py-1 rounded-md border border-border text-primary font-mono"
-                      >
-                        {tech}
-                      </span>
-                    ))}
-                  </div>
-
-                  {/* ── Actions ── */}
-                  <div className="flex flex-col gap-2 mt-auto">
-
-                    {/* Row 1 — Live URL + GitHub (same line) */}
-                    <div className="flex items-center gap-2">
-                      <a
-                        href={project.liveLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-primary-foreground transition-all hover-lift"
-                        style={{ backgroundImage: "var(--gradient-primary)" }}
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                        Live
-                      </a>
-                      <a
-                        href={project.githubLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-border text-foreground hover:border-primary hover:text-primary transition-all"
-                      >
-                        <Github className="w-3.5 h-3.5" />
-                        GitHub
-                      </a>
-                    </div>
-
-                    {/* Row 2 — View Details (full width) */}
-                    <Link
-                      href={`/project/${project.id}`}
-                      className="w-full inline-flex items-center justify-center gap-2 px-3 py-3 mt-1 rounded-lg text-xs font-semibold border border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-all"
-                    >
-                      View Details <ArrowRight className="w-3.5 h-3.5" />
-                    </Link>
-
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* ── Pagination ── */}
-          {totalPages > 1 && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={inView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.5, delay: 0.4 }}
-              className="flex items-center justify-center gap-2 mt-12"
-            >
-              {/* Prev */}
-              <button
-                onClick={() => goTo(page - 1)}
-                disabled={page === 1}
-                className="p-2 rounded-lg border border-border text-muted-foreground hover:border-primary hover:text-primary transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-
-              {/* Page numbers */}
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => goTo(p)}
-                  className={`w-9 h-9 rounded-lg text-sm font-semibold transition-all ${
-                    p === page
-                      ? "text-primary-foreground glow"
-                      : "border border-border text-muted-foreground hover:border-primary hover:text-primary"
-                  }`}
-                  style={p === page ? { backgroundImage: "var(--gradient-primary)" } : {}}
-                >
-                  {p}
-                </button>
-              ))}
-
-              {/* Next */}
-              <button
-                onClick={() => goTo(page + 1)}
-                disabled={page === totalPages}
-                className="p-2 rounded-lg border border-border text-muted-foreground hover:border-primary hover:text-primary transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </motion.div>
-          )}
-
-          {/* Page info */}
-          {totalPages > 1 && (
-            <p className="text-center text-xs text-muted-foreground mt-3 font-mono">
-              Page {page} of {totalPages} · {projects.length} projects
-            </p>
-          )}
-
+          <div className="section-line" />
+          <p className="section-subtitle">Real-world applications built with modern full-stack technologies</p>
         </motion.div>
+
+        {/* Grid */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "1.25rem" }}>
+          {paginated.map((project, i) => (
+            <ProjectCard key={project.id} project={project} index={i} inView={inView} />
+          ))}
+        </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={inView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.5, delay: 0.4 }}
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.6rem", marginTop: "2.5rem" }}
+          >
+            <button onClick={() => goTo(page - 1)} disabled={page === 1}
+              style={{ padding: "0.5rem", borderRadius: 10, border: "1px solid var(--glass-border)", background: "var(--glass-bg)", color: "var(--text-secondary)", cursor: page === 1 ? "not-allowed" : "pointer", opacity: page === 1 ? 0.3 : 1, display: "flex", transition: "all 0.2s" }}>
+              <ChevronLeft size={16} />
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <button key={p} onClick={() => goTo(p)}
+                style={{
+                  width: 36, height: 36, borderRadius: 10, fontSize: "0.85rem", fontWeight: 600, cursor: "pointer", transition: "all 0.25s",
+                  background: p === page ? "var(--grad-cyan-vio)" : "var(--glass-bg)",
+                  border: p === page ? "none" : "1px solid var(--glass-border)",
+                  color: p === page ? "#fff" : "var(--text-secondary)",
+                  boxShadow: p === page ? "0 4px 14px rgba(0,212,255,0.3)" : "var(--glow-card)",
+                }}>
+                {p}
+              </button>
+            ))}
+            <button onClick={() => goTo(page + 1)} disabled={page === totalPages}
+              style={{ padding: "0.5rem", borderRadius: 10, border: "1px solid var(--glass-border)", background: "var(--glass-bg)", color: "var(--text-secondary)", cursor: page === totalPages ? "not-allowed" : "pointer", opacity: page === totalPages ? 0.3 : 1, display: "flex", transition: "all 0.2s" }}>
+              <ChevronRight size={16} />
+            </button>
+          </motion.div>
+        )}
+
+        {totalPages > 1 && (
+          <p style={{ textAlign: "center", fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "0.75rem", fontFamily: "'JetBrains Mono',monospace", fontWeight: 500 }}>
+            Page {page} of {totalPages} · {projects.length} projects
+          </p>
+        )}
+
       </div>
     </section>
   );
-};
-
-export default Projects;
+}

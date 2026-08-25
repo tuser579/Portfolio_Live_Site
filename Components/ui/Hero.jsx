@@ -2,8 +2,8 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    Download, Eye, Github, Linkedin, Twitter, Facebook,
-    X, FileText, ExternalLink, Loader2
+  Download, Eye, Github, Linkedin, Twitter, Facebook,
+  X, FileText, ExternalLink, Loader2, MapPin, Mail, Phone
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -13,733 +13,524 @@ import { projects } from "../../data/portfolio";
 import { certifications } from "../../data/portfolio";
 
 // ─────────────────────────────────────────────────────────────
-//  PDF GENERATOR — all links are clickable via doc.link()
+//  PDF GENERATOR (unchanged)
 // ─────────────────────────────────────────────────────────────
-
 async function generateAndDownloadPDF() {
-    const { default: jsPDF } = await import("jspdf");
-
-    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-
-    const W = 210;
-    const MARGIN = 18; // Slightly tighter margin to gain vertical space
-    const CW = W - MARGIN * 2;
-    let y = 20;
-
-    const BLACK = [0, 0, 0];
-    const DARK = [30, 30, 30];
-    const MID = [60, 60, 60];
-    const MUTED = [110, 110, 110];
-    const LINK = [10, 100, 200];
-
-    const checkPage = (need = 10) => {
-        if (y + need > 279) { doc.addPage(); y = 18; }
-    };
-
-    const hRule = () => {
-        doc.setDrawColor(...MUTED);
-        doc.setLineWidth(0.2);
-        doc.line(MARGIN, y, W - MARGIN, y);
-        y += 2.8; // Tightened from 4
-    };
-
-    const sectionTitle = (title) => {
-        checkPage(12);
-        y += 3.0; // Tightened from 5
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(10);
-        doc.setTextColor(...BLACK);
-        doc.text(title.toUpperCase(), MARGIN, y);
-        y += 1.3;
-        hRule();
-    };
-
-    const addLink = (text, url, x, linkY, fontSize) => {
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(fontSize);
-        doc.setTextColor(...LINK);
-        doc.text(text, x, linkY);
-        const tw = doc.getTextWidth(text);
-        doc.setDrawColor(...LINK);
-        doc.setLineWidth(0.15);
-        doc.line(x, linkY + 0.6, x + tw, linkY + 0.6);
-        const lh = fontSize * 0.35;
-        doc.link(x, linkY - lh, tw, lh + 1, { url });
-        return tw;
-    };
-
-    const bullet = (text, indent = 4) => {
-        checkPage(6);
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(9.5);
-        doc.setTextColor(...BLACK);
-        doc.text("\u2022", MARGIN + indent, y);
-        const lines = doc.splitTextToSize(text, CW - indent - 5);
-        doc.text(lines, MARGIN + indent + 4, y);
-        y += lines.length * 3.4 + 0.5; // Tightened line height
-    };
-
-    // ── HEADER ──
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(18);
-    doc.setTextColor(...BLACK);
-    doc.text("MD. MUTTAKIUL ISLAM TUSER", W / 2, y, { align: "center" });
-    y += 5.0;
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    doc.setTextColor(...BLACK);
-    doc.text("Full-Stack Web Developer | MERN Stack | Frontend Focused", W / 2, y, { align: "center" });
-    y += 4.5;
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.setTextColor(...BLACK);
-    doc.text("tusermon720@gmail.com  |  +880 1760-049326  |  DSC, Asulia, Birulia, Dhaka-1216, Bangladesh", W / 2, y, { align: "center" });
-    y += 4.5;
-
-    const socials = [
-        { label: "Portfolio", url: "https://portfolio-live-site.vercel.app/" },
-        { label: "GitHub", url: "https://github.com/tuser579" },
-        { label: "LinkedIn", url: "https://www.linkedin.com/in/md-muttakiul-islam-tuser-36b104388" },
-    ];
-
-    const sep = "  |  ";
-    doc.setFontSize(9);
-    const sepW = doc.getTextWidth(sep);
-    const lWs = socials.map(s => doc.getTextWidth(s.label));
-    const totalW = lWs.reduce((a, b) => a + b, 0) + sepW * (socials.length - 1);
-    let sx = (W - totalW) / 2;
-
-    socials.forEach((s, i) => {
-        addLink(s.label, s.url, sx, y, 9);
-        sx += lWs[i];
-        if (i < socials.length - 1) {
-            doc.setFont("helvetica", "normal");
-            doc.setTextColor(...MUTED);
-            doc.text(sep, sx, y);
-            sx += sepW;
-        }
-    });
-    y += 5;
-
-    // ── CAREER OBJECTIVE ──
-    sectionTitle("Career Objective");
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9.5);
-    doc.setTextColor(...BLACK);
-    const summary =
-        "A MERN-Stack Developer by passion, I started my coding journey with HTML, CSS, and JavaScript " +
-        "before diving deep into React, Next.js Node.js, Express.js, and MongoDB. Through car rental   " +
-        "booking systems, community skill-sharing platforms, cityfix issue solving systems, e-commerce " +
-        "website applications. Proficient in responsive UI development with Tailwind CSS and deployment" +
-        "workflows using Vercel, Netlify, and Firebase. I have honed my ability to solve problems. My  " +
-        "goal is simple: build applications that are practical, meaningful, and delightful for users.";
-    const sumLines = doc.splitTextToSize(summary, CW);
-    doc.text(sumLines, MARGIN, y);
-    y += sumLines.length * 3.5 + 2;
-
-    // ── TECHNICAL SKILLS ──
-    sectionTitle("Technical Skills");
-    const skillGroups = [
-        ["Frontend Development", "HTML5, CSS3, Tailwind CSS, JavaScript (ES6+), TypeScript, React.js, Next.js"],
-        ["Backend Development", "Node.js, Express.js"],
-        ["Database", "MongoDB, MySQL"],
-        ["Version Control & Deploy", "Git, GitHub, Netlify, Cloudflare, Surge, Firebase, Vercel, Railway, Render"],
-        ["Languages", "C, C++"],
-        ["Soft Skills", "Team Collaboration, Problem-Solving, Adaptability"],
-    ];
-
-    skillGroups.forEach(([label, value]) => {
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(9.5);
-        doc.setTextColor(...BLACK);
-        const labelText = label + ":  ";
-        const lw = doc.getTextWidth(labelText);
-        doc.text(labelText, MARGIN + 2, y);
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(...BLACK);
-        const valLines = doc.splitTextToSize(value, CW - 2 - lw);
-        doc.text(valLines, MARGIN + 2 + lw, y);
-        y += valLines.length * 4 + 0.5;
-    });
-
-    // ═══════════════════════════════════════════════════════════
-    // PROJECTS
-    // ═══════════════════════════════════════════════════════════
-
-    sectionTitle("Projects");
-    projects.slice(0, 3).forEach((p) => {
-        checkPage(38);
-        // ── Project name (left) + links (right) on same line ──
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(10.5);
-        doc.setTextColor(...BLACK);
-
-        const titleLabel = "Title: ";
-        const titleLabelWidth = doc.getTextWidth(titleLabel);
-
-        // Draw the "Title: " label
-        doc.text(titleLabel, MARGIN, y);
-        // Draw the actual Project Name immediately after the label
-        doc.setFont("helvetica", "bold"); // Keep bold or change to normal if preferred
-        doc.text(p.name, MARGIN + titleLabelWidth, y);
-
-        // Links logic...
-        const liveLabel = "Live Demo";
-        const separator = "   |   ";
-        const repoLabel = "GitHub";
-        doc.setFontSize(9.5);
-        const repoTW = doc.getTextWidth(repoLabel);
-        const sepTW = doc.getTextWidth(separator);
-        const liveTW = doc.getTextWidth(liveLabel);
-        const rowW = liveTW + sepTW + repoTW;
-        let rx = W - MARGIN - rowW;
-
-        addLink(liveLabel, p.liveLink, rx, y, 9.5);
-        rx += liveTW;
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(...MUTED);
-        doc.text(separator, rx, y);
-        rx += sepTW;
-
-        addLink(repoLabel, p.githubLink, rx, y, 9.5);
-
-        // Move Y down after title/links
-        y += 4;
-
-        // ── Overview (Standard Text, No Bullet) ──
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(10);
-        doc.setTextColor(...BLACK);
-        const overviewLabel = "Overview: ";
-        const oLabelW = doc.getTextWidth(overviewLabel);
-        doc.text(overviewLabel, MARGIN, y);
-
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(...BLACK);
-        // Split description to ensure it doesn't overflow horizontally
-        const overviewLines = doc.splitTextToSize(p.shortDescription, CW - oLabelW);
-        doc.text(overviewLines, MARGIN + oLabelW, y);
-
-        // Calculate space used by Overview and move Y down
-        // (Line height is approx 4-5 units)
-        y += (overviewLines.length * 3.3) + 1.5;
-
-        // ── Highlights (Max 3) ──
-        if (p.highlights && Array.isArray(p.highlights)) {
-            // Reset character spacing to 0 to fix the stretching error in the screenshot
-            doc.setCharSpace(0);
-            doc.setFont("helvetica", "normal");
-            doc.setTextColor(...BLACK);
-            doc.setFontSize(9);
-
-            p.highlights.slice(0, 3).forEach((highlight) => {
-                checkPage(6);
-
-                // Render the bullet
-                bullet(highlight);
-
-                // Force Y increment if your bullet function doesn't do it automatically
-                // y += 4.5; 
-            });
-
-        }
-
-        // Add a small gap before Tech stack if bullets didn't add one
-        y += 2;
-
-        // ── Tech stack ──
-        checkPage(10);
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(9.5);
-        doc.setTextColor(...BLACK);
-
-        const techLabel = "Technologies:  ";
-        const tlw = doc.getTextWidth(techLabel);
-        doc.text(techLabel, MARGIN + 4, y);
-
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(...BLACK);
-        const techStack = p.techStack.slice(0, 5).join(", ");
-        const techLines = doc.splitTextToSize(techStack, CW - 4 - tlw);
-        doc.text(techLines, MARGIN + 4 + tlw, y);
-
-        y += (techLines.length * 5) + 2; // Move Y for the next project
-
-    });
-
-
-    // ── PROBLEM SOLVING ──
-    sectionTitle("Problem Solving");
-    const problemSolvingData = [
-        { platform: "Codeforces", count: "  500 Solved", url: "https://codeforces.com/profile/Tu.ser" },
-        { platform: "CodeChef", count: "  508 Solved", url: "https://www.codechef.com/users/tuser579" },
-        { platform: "LeetCode", count: "  131 Solved", url: "https://leetcode.com/u/tuser579/" },
-        { platform: "Beecrowd", count: "  164 Solved", url: "https://judge.beecrowd.com/en/profile/948665" }
-    ];
-
-    problemSolvingData.forEach((item) => {
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(9.5);
-        doc.setTextColor(...BLACK);
-        const pLabel = `${item.platform}: `;
-        doc.text(pLabel, MARGIN, y);
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(...BLACK);
-        doc.text(item.count, MARGIN + doc.getTextWidth(pLabel), y);
-        const linkLabel = "Profile Link";
-        const lW = doc.getTextWidth(linkLabel);
-        addLink(linkLabel, item.url, W - MARGIN - lW, y, 9);
-        y += 4.5;
-    });
-
-    // ── EDUCATION ──
-    sectionTitle("Education");
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.setTextColor(...BLACK);
-    doc.text("B.Sc in Computer Science and Engineering", MARGIN, y);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(...BLACK);
-    doc.text("2024 – Present", W - MARGIN, y, { align: "right" });
-    y += 4.5;
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(...BLACK);
-    doc.text("Daffodil International University (DIU), Dhaka", MARGIN, y);
-    y += 5;
-
-   // ── CERTIFICATIONS ──
-    sectionTitle("Certifications");
-    certifications.slice(0, 2).forEach((cert) => {
-        // 1. RESET COLOR AT START OF EACH ROW
-        doc.setTextColor(...BLACK); 
-        
-        doc.setFont("helvetica", "bold");
-        const iss = `${cert.issuer}:   `;
-        doc.text(iss, MARGIN, y);
-        
-        doc.setFont("helvetica", "normal");
-        // Maintain the dark color for the description
-        doc.setTextColor(...BLACK); 
-        
-        const dLines = doc.splitTextToSize(cert.description, CW - doc.getTextWidth(iss) - 25);
-        doc.text(dLines, MARGIN + doc.getTextWidth(iss), y);
-        
-        // 2. ADD LINK (This changes the "pen" color to blue internally)
-        if (cert.credentialUrl) {
-            const linkLabel = "View";
-            const linkW = doc.getTextWidth(linkLabel);
-            addLink(linkLabel, cert.credentialUrl, W - MARGIN - linkW, y, 9);
-        }
-        
-        y += dLines.length * 3.5 + 1.5;
-    });
-
-    sectionTitle("Languages");
-    bullet("Bengali (Native)", 2);
-    bullet("English (Intermediate)", 2);
-
-    doc.save("MD_Muttakiul_Islam_Tuser_Resume.pdf");
+  const { default: jsPDF } = await import("jspdf");
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const W = 210; const MARGIN = 18; const CW = W - MARGIN * 2; let y = 20;
+  const BLACK = [0,0,0]; const MUTED = [110,110,110]; const LINK = [10,100,200];
+  const checkPage = (need = 10) => { if (y + need > 279) { doc.addPage(); y = 18; } };
+  const hRule = () => { doc.setDrawColor(...MUTED); doc.setLineWidth(0.2); doc.line(MARGIN,y,W-MARGIN,y); y += 2.8; };
+  const sectionTitle = (title) => { checkPage(12); y += 3.0; doc.setFont("helvetica","bold"); doc.setFontSize(10); doc.setTextColor(...BLACK); doc.text(title.toUpperCase(),MARGIN,y); y += 1.3; hRule(); };
+  const addLink = (text, url, x, linkY, fontSize) => { doc.setFont("helvetica","normal"); doc.setFontSize(fontSize); doc.setTextColor(...LINK); doc.text(text,x,linkY); const tw = doc.getTextWidth(text); doc.setDrawColor(...LINK); doc.setLineWidth(0.15); doc.line(x,linkY+0.6,x+tw,linkY+0.6); const lh = fontSize*0.35; doc.link(x,linkY-lh,tw,lh+1,{url}); return tw; };
+  const bullet = (text, indent = 4) => { checkPage(6); doc.setFont("helvetica","normal"); doc.setFontSize(9.5); doc.setTextColor(...BLACK); doc.text("\u2022",MARGIN+indent,y); const lines = doc.splitTextToSize(text,CW-indent-5); doc.text(lines,MARGIN+indent+4,y); y += lines.length*3.4+0.5; };
+  doc.setFont("helvetica","bold"); doc.setFontSize(18); doc.setTextColor(...BLACK); doc.text("MD. MUTTAKIUL ISLAM TUSER",W/2,y,{align:"center"}); y+=5.0;
+  doc.setFont("helvetica","bold"); doc.setFontSize(12); doc.setTextColor(...BLACK); doc.text("Full-Stack Web Developer | MERN Stack | Frontend Focused",W/2,y,{align:"center"}); y+=4.5;
+  doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(...BLACK); doc.text("tusermon720@gmail.com  |  +880 1760-049326  |  DSC, Asulia, Birulia, Dhaka-1216, Bangladesh",W/2,y,{align:"center"}); y+=4.5;
+  const socials=[{label:"Portfolio",url:"https://portfolio-live-site.vercel.app/"},{label:"GitHub",url:"https://github.com/tuser579"},{label:"LinkedIn",url:"https://www.linkedin.com/in/md-muttakiul-islam-tuser-36b104388"}];
+  const sep="  |  "; doc.setFontSize(9); const sepW=doc.getTextWidth(sep); const lWs=socials.map(s=>doc.getTextWidth(s.label)); const totalW=lWs.reduce((a,b)=>a+b,0)+sepW*(socials.length-1); let sx=(W-totalW)/2;
+  socials.forEach((s,i)=>{addLink(s.label,s.url,sx,y,9);sx+=lWs[i];if(i<socials.length-1){doc.setFont("helvetica","normal");doc.setTextColor(...MUTED);doc.text(sep,sx,y);sx+=sepW;}}); y+=5;
+  sectionTitle("Career Objective"); doc.setFont("helvetica","normal"); doc.setFontSize(9.5); doc.setTextColor(...BLACK);
+  const summary="A MERN-Stack Developer by passion, I started my coding journey with HTML, CSS, and JavaScript before diving deep into React, Next.js Node.js, Express.js, and MongoDB. Through car rental booking systems, community skill-sharing platforms, cityfix issue solving systems, e-commerce website applications. Proficient in responsive UI development with Tailwind CSS and deployment workflows using Vercel, Netlify, and Firebase. I have honed my ability to solve problems. My goal is simple: build applications that are practical, meaningful, and delightful for users.";
+  const sumLines=doc.splitTextToSize(summary,CW); doc.text(sumLines,MARGIN,y); y+=sumLines.length*3.5+2;
+  sectionTitle("Technical Skills");
+  const skillGroups=[["Frontend Development","HTML5, CSS3, Tailwind CSS, JavaScript (ES6+), TypeScript, React.js, Next.js"],["Backend Development","Node.js, Express.js"],["Database","MongoDB, MySQL"],["Version Control & Deploy","Git, GitHub, Netlify, Cloudflare, Surge, Firebase, Vercel, Railway, Render"],["Languages","C, C++"],["Soft Skills","Team Collaboration, Problem-Solving, Adaptability"]];
+  skillGroups.forEach(([label,value])=>{doc.setFont("helvetica","bold");doc.setFontSize(9.5);doc.setTextColor(...BLACK);const labelText=label+":  ";const lw=doc.getTextWidth(labelText);doc.text(labelText,MARGIN+2,y);doc.setFont("helvetica","normal");doc.setTextColor(...BLACK);const valLines=doc.splitTextToSize(value,CW-2-lw);doc.text(valLines,MARGIN+2+lw,y);y+=valLines.length*4+0.5;});
+  sectionTitle("Projects");
+  projects.slice(0,3).forEach((p)=>{checkPage(38);doc.setFont("helvetica","bold");doc.setFontSize(10.5);doc.setTextColor(...BLACK);const titleLabel="Title: ";const titleLabelWidth=doc.getTextWidth(titleLabel);doc.text(titleLabel,MARGIN,y);doc.setFont("helvetica","bold");doc.text(p.name,MARGIN+titleLabelWidth,y);const liveLabel="Live Demo";const separator="   |   ";const repoLabel="GitHub";doc.setFontSize(9.5);const repoTW=doc.getTextWidth(repoLabel);const sepTW=doc.getTextWidth(separator);const liveTW=doc.getTextWidth(liveLabel);const rowW=liveTW+sepTW+repoTW;let rx=W-MARGIN-rowW;addLink(liveLabel,p.liveLink,rx,y,9.5);rx+=liveTW;doc.setFont("helvetica","normal");doc.setTextColor(...MUTED);doc.text(separator,rx,y);rx+=sepTW;addLink(repoLabel,p.githubLink,rx,y,9.5);y+=4;doc.setFont("helvetica","bold");doc.setFontSize(10);doc.setTextColor(...BLACK);const overviewLabel="Overview: ";const oLabelW=doc.getTextWidth(overviewLabel);doc.text(overviewLabel,MARGIN,y);doc.setFont("helvetica","normal");doc.setTextColor(...BLACK);const overviewLines=doc.splitTextToSize(p.shortDescription,CW-oLabelW);doc.text(overviewLines,MARGIN+oLabelW,y);y+=(overviewLines.length*3.3)+1.5;if(p.highlights&&Array.isArray(p.highlights)){doc.setCharSpace(0);doc.setFont("helvetica","normal");doc.setTextColor(...BLACK);doc.setFontSize(9);p.highlights.slice(0,3).forEach((h)=>{checkPage(6);bullet(h);});}y+=2;checkPage(10);doc.setFont("helvetica","bold");doc.setFontSize(9.5);doc.setTextColor(...BLACK);const techLabel="Technologies:  ";const tlw=doc.getTextWidth(techLabel);doc.text(techLabel,MARGIN+4,y);doc.setFont("helvetica","normal");doc.setTextColor(...BLACK);const techStack=p.techStack.slice(0,5).join(", ");const techLines=doc.splitTextToSize(techStack,CW-4-tlw);doc.text(techLines,MARGIN+4+tlw,y);y+=(techLines.length*5)+2;});
+  sectionTitle("Problem Solving");
+  const problemSolvingData=[{platform:"Codeforces",count:"  500 Solved",url:"https://codeforces.com/profile/Tu.ser"},{platform:"CodeChef",count:"  508 Solved",url:"https://www.codechef.com/users/tuser579"},{platform:"LeetCode",count:"  131 Solved",url:"https://leetcode.com/u/tuser579/"},{platform:"Beecrowd",count:"  164 Solved",url:"https://judge.beecrowd.com/en/profile/948665"}];
+  problemSolvingData.forEach((item)=>{doc.setFont("helvetica","bold");doc.setFontSize(9.5);doc.setTextColor(...BLACK);const pLabel=`${item.platform}: `;doc.text(pLabel,MARGIN,y);doc.setFont("helvetica","normal");doc.setTextColor(...BLACK);doc.text(item.count,MARGIN+doc.getTextWidth(pLabel),y);const linkLabel="Profile Link";const lW=doc.getTextWidth(linkLabel);addLink(linkLabel,item.url,W-MARGIN-lW,y,9);y+=4.5;});
+  sectionTitle("Education"); doc.setFont("helvetica","bold"); doc.setFontSize(10); doc.setTextColor(...BLACK); doc.text("B.Sc in Computer Science and Engineering",MARGIN,y); doc.setFont("helvetica","normal"); doc.setTextColor(...BLACK); doc.text("2024 – Present",W-MARGIN,y,{align:"right"}); y+=4.5; doc.text("Daffodil International University (DIU), Dhaka",MARGIN,y); y+=5;
+  sectionTitle("Certifications");
+  certifications.slice(0,2).forEach((cert)=>{doc.setTextColor(...BLACK);doc.setFont("helvetica","bold");const iss=`${cert.issuer}:   `;doc.text(iss,MARGIN,y);doc.setFont("helvetica","normal");doc.setTextColor(...BLACK);const dLines=doc.splitTextToSize(cert.description,CW-doc.getTextWidth(iss)-25);doc.text(dLines,MARGIN+doc.getTextWidth(iss),y);if(cert.credentialUrl){const linkLabel="View";const linkW=doc.getTextWidth(linkLabel);addLink(linkLabel,cert.credentialUrl,W-MARGIN-linkW,y,9);}y+=dLines.length*3.5+1.5;});
+  sectionTitle("Languages"); bullet("Bengali (Native)",2); bullet("English (Intermediate)",2);
+  doc.save("MD_Muttakiul_Islam_Tuser_Resume.pdf");
 }
 
 // ─────────────────────────────────────────────────────────────
 //  DOWNLOAD BUTTON
 // ─────────────────────────────────────────────────────────────
 const DownloadButton = ({ className, iconSize = "w-3.5 h-3.5", label = "Download", style }) => {
-    const [downloading, setDownloading] = useState(false);
-    const handleClick = async (e) => {
-        e.stopPropagation();
-        setDownloading(true);
-        try { await generateAndDownloadPDF(); }
-        finally { setDownloading(false); }
-    };
-    return (
-        <button onClick={handleClick} disabled={downloading} className={className} style={style}>
-            {downloading ? <Loader2 className={`${iconSize} animate-spin`} /> : <Download className={iconSize} />}
-            {downloading ? "Generating..." : label}
-        </button>
-    );
+  const [downloading, setDownloading] = useState(false);
+  const handleClick = async (e) => {
+    e.stopPropagation();
+    setDownloading(true);
+    try { await generateAndDownloadPDF(); }
+    finally { setDownloading(false); }
+  };
+  return (
+    <button onClick={handleClick} disabled={downloading} className={className} style={style}>
+      {downloading ? <Loader2 className={`${iconSize} animate-spin`} /> : <Download className={iconSize} />}
+      {downloading ? "Generating..." : label}
+    </button>
+  );
 };
 
 // ─────────────────────────────────────────────────────────────
-//  RESUME MODAL
-// ────────────────────────────────────────────────────────────
-
+//  RESUME MODAL — Liquid Glass redesign
+// ─────────────────────────────────────────────────────────────
 const ResumeModal = ({ onClose }) => (
-    <AnimatePresence>
-        <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
-            onClick={onClose}
-        >
-            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+  <AnimatePresence>
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
+      onClick={onClose}
+    >
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-md" />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.92, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.92, y: 20 }}
+        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+        onClick={(e) => e.stopPropagation()}
+        className="relative z-10 w-full max-w-3xl max-h-[90vh] flex flex-col rounded-2xl overflow-hidden"
+        style={{
+          background: "var(--bg-layer)",
+          backdropFilter: "blur(32px)",
+          border: "1px solid var(--glass-border-hover)",
+          boxShadow: "var(--glow-card)",
+        }}
+      >
+        {/* Top bar */}
+        <div style={{ borderBottom: "1px solid var(--glass-border)", padding: "0.75rem 1rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem" }} className="sm:px-6 sm:py-3.5">
+          <div style={{ display: "flex", alignItems: "center", gap: "0.65rem" }}>
+            <div style={{ padding: "0.45rem", borderRadius: 10, background: "rgba(0,212,255,0.12)", border: "1px solid rgba(0,212,255,0.3)", flexShrink: 0 }}>
+              <FileText size={16} style={{ color: "var(--cyan)" }} />
+            </div>
+            {/* Name and subtitle hidden on mobile and tablet devices, visible only on desktop */}
+            <div className="hidden lg:block">
+              <p style={{ fontFamily: "'Outfit',sans-serif", fontWeight: 700, color: "var(--text-primary)", fontSize: "0.88rem", lineHeight: 1.2 }}>
+                MD. MUTTAKIUL ISLAM TUSER
+              </p>
+              <p style={{ fontFamily: "'JetBrains Mono',monospace", color: "var(--cyan)", fontSize: "0.65rem", marginTop: 2, fontWeight: 600 }}>
+                MERN Stack Developer · Resume
+              </p>
+            </div>
+            {/* Simple concise label on mobile and tablet */}
+            <span className="lg:hidden font-bold text-xs sm:text-sm text-[var(--text-primary)]" style={{ fontFamily: "'Outfit',sans-serif" }}>
+              Resume Preview
+            </span>
+          </div>
+          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexShrink: 0 }}>
+            <DownloadButton
+              label="Download" iconSize="w-3.5 h-3.5"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs font-semibold text-white transition-all btn-primary"
+            />
+            <button onClick={onClose} aria-label="Close modal" style={{ padding: "0.45rem", borderRadius: 9999, border: "1px solid var(--glass-border)", color: "var(--text-secondary)", cursor: "pointer", background: "transparent", display: "flex", transition: "all 0.2s" }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--cyan)"; e.currentTarget.style.color = "var(--cyan)"; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--glass-border)"; e.currentTarget.style.color = "var(--text-secondary)"; }}>
+              <X size={16} />
+            </button>
+          </div>
+        </div>
 
-            <motion.div
-                initial={{ opacity: 0, scale: 0.92, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.92, y: 20 }}
-                transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                onClick={(e) => e.stopPropagation()}
-                className="relative z-10 w-full max-w-3xl max-h-[90vh] flex flex-col glass-card rounded-2xl overflow-hidden border border-border/60"
-                style={{ boxShadow: "0 0 60px hsl(198 93% 59% / 0.15)" }}
-            >
-                {/* Top bar */}
-                <div className="flex items-center justify-between px-5 py-4 border-b border-border/50 shrink-0">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-primary/10"><FileText className="w-4 h-4 text-primary" /></div>
-                        <div>
-                            <p className="font-semibold text-foreground text-sm">MD. MUTTAKIUL ISLAM TUSER</p>
-                            <p className="text-xs text-muted-foreground font-mono">MERN Stack Developer · Resume</p>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <DownloadButton
-                            label="Download" iconSize="w-3.5 h-3.5"
-                            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-primary-foreground transition-all hover-lift glow disabled:opacity-60"
-                            style={{ backgroundImage: "var(--gradient-primary)" }}
-                        />
-                        <button onClick={onClose} className="p-2 rounded-lg border border-border text-muted-foreground hover:border-primary hover:text-primary transition-all">
-                            <X className="w-4 h-4" />
-                        </button>
-                    </div>
+        {/* Scrollable content */}
+        <div className="overflow-y-auto flex-1 p-4 sm:p-7 space-y-6 sm:space-y-7">
+          {/* Header */}
+          <div style={{ textAlign: "center", paddingBottom: "1.25rem", borderBottom: "1px solid var(--glass-border)" }}>
+            <h2 style={{ fontFamily: "'Outfit',sans-serif", fontWeight: 800, fontSize: "clamp(1.1rem, 3.5vw, 1.5rem)", color: "var(--text-primary)", marginBottom: "0.35rem", lineHeight: 1.2 }}>
+              MD. MUTTAKIUL ISLAM TUSER
+            </h2>
+            <p style={{ fontFamily: "'JetBrains Mono',monospace", color: "var(--cyan)", fontSize: "clamp(0.7rem, 2vw, 0.8rem)", fontWeight: 600, marginBottom: "0.65rem", lineHeight: 1.4 }}>
+              Full-Stack Web Developer | MERN Stack | Frontend Focused
+            </p>
+            <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "0.35rem 0.85rem", fontSize: "0.74rem", color: "var(--text-secondary)", lineHeight: 1.5 }}>
+              <span>tusermon720@gmail.com</span>
+              <span className="hidden sm:inline">·</span>
+              <span>+8801760049326</span>
+              <span className="hidden sm:inline">·</span>
+              <span>DSC, Asulia, Birulia, Dhaka-1216</span>
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "0.75rem", marginTop: "0.6rem" }}>
+              {[{ label: "GitHub", href: "https://github.com/tuser579" }, { label: "LinkedIn", href: "https://www.linkedin.com/in/md-muttakiul-islam-tuser-36b104388" }].map(({ label, href }) => (
+                <a key={label} href={href} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem", fontSize: "0.75rem", color: "var(--cyan)", textDecoration: "none", fontWeight: 600 }}>
+                  {label} <ExternalLink size={11} />
+                </a>
+              ))}
+            </div>
+          </div>
+
+          {/* Career Objective */}
+          <div>
+            <h3 style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--cyan)", marginBottom: "0.6rem" }}>Career Objective</h3>
+            <p style={{ color: "var(--text-secondary)", lineHeight: 1.7, fontSize: "0.85rem" }}>A MERN-Stack Developer by passion, I started my coding journey with HTML, CSS, and JavaScript before diving deep into React, Next.js, Node.js, Express.js, and MongoDB. Proficient in responsive UI development with Tailwind CSS and deployment workflows using Vercel, Netlify, and Firebase. My goal: build applications that are practical, meaningful, and delightful.</p>
+          </div>
+
+          {/* Skills */}
+          <div>
+            <h3 style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--cyan)", marginBottom: "0.75rem" }}>Skills</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: "0.6rem" }}>
+              {[
+                { label: "Frontend", value: "HTML, CSS, Tailwind CSS, JS, React.js, Next.js" },
+                { label: "Backend", value: "Node.js, Express.js" },
+                { label: "Database", value: "MongoDB, MySQL, Firebase" },
+                { label: "Deploy", value: "Git, GitHub, Vercel, Netlify" },
+                { label: "Languages", value: "C, C++" },
+                { label: "Soft Skills", value: "Team collaboration, Problem-solving" },
+              ].map(({ label, value }) => (
+                <div key={label} style={{ background: "var(--glass-bg)", border: "1px solid var(--glass-border)", borderRadius: 10, padding: "0.65rem 0.85rem", boxShadow: "var(--glow-card)" }}>
+                  <p style={{ fontSize: "0.62rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--cyan)", marginBottom: "0.3rem", fontFamily: "'JetBrains Mono',monospace" }}>{label}</p>
+                  <p style={{ color: "var(--text-secondary)", fontSize: "0.78rem", lineHeight: 1.5 }}>{value}</p>
                 </div>
+              ))}
+            </div>
+          </div>
 
-                {/* Scrollable content */}
-                <div className="overflow-y-auto flex-1 p-5 sm:p-8 space-y-6">
-
-                    {/* Header */}
-                    <div className="text-center pb-4 border-b border-border/40">
-                        <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-1">MD. MUTTAKIUL ISLAM TUSER</h2>
-                        <p className="text-primary font-mono text-sm font-semibold mb-2">Full-Stack Web Developer | MERN Stack | Frontend Focused</p>
-                        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                            <span>tusermon720@gmail.com</span>
-                            <span>+8801760049326</span>
-                            <span>DSC, Asulia, Birulia, Dhaka-1216, Bangladesh</span>
-                        </div>
-                        <div className="flex flex-wrap items-center justify-center gap-3 mt-2">
-                            {[
-                                { label: "GitHub", href: "https://github.com/tuser579" },
-                                { label: "LinkedIn", href: "https://www.linkedin.com/in/md-muttakiul-islam-tuser-36b104388" },
-                                // { label: "Twitter",  href: "https://x.com/md_57990667" },
-                                // { label: "Facebook", href: "https://www.facebook.com/mohammad.osman.98622" },
-                            ].map(({ label, href }) => (
-                                <a key={label} href={href} target="_blank" rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
-                                    {label} <ExternalLink className="w-3 h-3" />
-                                </a>
-                            ))}
-                        </div>
+          {/* Projects */}
+          <div>
+            <h3 style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--cyan)", marginBottom: "0.75rem" }}>Projects</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+              {[0, 1, 2].map(i => ({ name: projects[i].name, desc: projects[i].shortDescription, highlights: projects[i].highlights, tech: projects[i].techStack.slice(0, 5), link: projects[i].liveLink, github: projects[i].githubLink })).map(({ name, desc, highlights, tech, link, github }) => (
+                <div key={name} style={{ background: "var(--glass-bg)", border: "1px solid var(--glass-border)", borderRadius: 12, padding: "1rem", boxShadow: "var(--glow-card)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.5rem" }}>
+                    <h4 style={{ fontFamily: "'Outfit',sans-serif", fontWeight: 700, color: "var(--text-primary)", fontSize: "0.9rem" }}>{name}</h4>
+                    <div style={{ display: "flex", gap: "0.5rem" }}>
+                      <a href={github} target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-secondary)", transition: "color 0.2s" }}><svg width={15} height={15} fill="currentColor" viewBox="0 0 24 24"><path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" /></svg></a>
+                      <a href={link} target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-secondary)" }}><ExternalLink size={14} /></a>
                     </div>
-
-                    {/* Career Objective */}
-                    <div>
-                        <h3 className="text-xs font-bold uppercase tracking-widest text-primary mb-2 font-mono">Career Objective</h3>
-                        <p className="text-foreground/80 leading-relaxed text-sm">
-                            A MERN-Stack Developer by passion, I started my coding journey with HTML, CSS, and JavaScript before diving deep into React, Next.js Node.js, Express.js, and MongoDB. Through car rental booking systems, community skill-sharing platforms, cityfix issue solving systems, e-commerce website applications. Proficient in responsive UI development with Tailwind CSS and deployment workflows using Vercel, Netlify, and Firebase. I have honed my ability to solve problems. My goal is simple: build applications that are practical, meaningful, and delightful for users.
-                        </p>
-                    </div>
-
-                    {/* Skills */}
-                    <div>
-                        <h3 className="text-xs font-bold uppercase tracking-widest text-primary mb-3 font-mono">Skills</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            {[
-                                { label: "Frontend", value: "HTML, CSS, Tailwind CSS, JavaScript (ES6+), React.js, Next.js" },
-                                { label: "Backend", value: "Node.js, Express.js" },
-                                { label: "Database", value: "MongoDB" },
-                                { label: "Version Control & Deploy", value: "Git, GitHub, Firebase, Vercel, Netlify" },
-                                { label: "Languages", value: "C, C++" },
-                                { label: "Soft Skills", value: "Team collaboration, Problem-solving, Adaptability" },
-                            ].map(({ label, value }) => (
-                                <div key={label} className="glass-card rounded-lg p-3 border border-border/40">
-                                    <p className="text-[10px] font-bold uppercase tracking-wider text-primary/70 mb-1">{label}</p>
-                                    <p className="text-foreground/80 text-xs leading-relaxed">{value}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Projects */}
-                    <div>
-                        <h3 className="text-xs font-bold uppercase tracking-widest text-primary mb-3 font-mono">Projects</h3>
-                        <div className="space-y-4">
-                            {[0, 1, 2].map(i => ({
-                                name: projects[i].name,
-                                desc: projects[i].shortDescription,
-                                highlights: projects[i].highlights,
-                                tech: projects[i].techStack.slice(0, 5),
-                                link: projects[i].liveLink,
-                                github: projects[i].githubLink,
-                            })).map(({ name, desc, highlights, tech, link, github }) => (
-                                <div key={name} className="glass-card rounded-xl p-4 border border-border/40 hover:border-primary/30 transition-all duration-300 group">
-                                    <div className="flex items-start justify-between mb-2">
-                                        <h4 className="font-bold text-foreground text-sm group-hover:text-primary transition-colors">{name}</h4>
-                                        <div className="flex gap-2 shrink-0 ml-2">
-                                            <a href={github} target="_blank" rel="noopener noreferrer" className="text-foreground/50 hover:text-primary transition-colors" aria-label="GitHub">
-                                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" /></svg>
-                                            </a>
-                                            <a href={link} target="_blank" rel="noopener noreferrer" className="text-foreground/50 hover:text-primary transition-colors" aria-label="Live Demo">
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                                            </a>
-                                        </div>
-                                    </div>
-                                    <p className="text-foreground/70 text-xs leading-relaxed mb-3 line-clamp-2"> <span className="text-blue-300 font-bold">Overview:</span> {desc}</p>
-
-                                    {/* Highlights Section - 3 bullet points */}
-                                    <div className="mb-3 space-y-1">
-                                        {highlights && highlights.map((highlight, idx) => (
-                                            <div key={idx} className="flex items-start gap-1.5">
-                                                <span className="text-primary text-[10px] mt-0.5">▹</span>
-                                                <span className="text-foreground/60 text-[10px] leading-relaxed">{highlight}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    <div className="flex flex-wrap gap-1.5">
-                                        {tech.map(t => (
-                                            <span key={t} className="text-[10px] px-2 py-0.5 rounded-md border border-border text-primary font-mono bg-primary/5">{t}</span>
-                                        ))}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Problem Solving */}
-                    <div>
-                        <h3 className="text-xs font-bold uppercase tracking-widest text-primary mb-4 font-mono">Problem Solving</h3>
-                        <div className="flex flex-col gap-3">
-                            {[
-                                {
-                                    platform: "Codeforces",
-                                    count: 500,
-                                    label: "Problems Solved",
-                                    profile: "https://codeforces.com/profile/Tu.ser",
-                                    color: "text-blue-400",
-                                    border: "border-blue-400/20 hover:border-blue-400/50",
-                                    bg: "hover:bg-blue-400/5",
-                                },
-                                {
-                                    platform: "CodeChef",
-                                    count: 508,
-                                    label: "Problems Solved",
-                                    profile: "https://www.codechef.com/users/tuser579",
-                                    color: "text-amber-400",
-                                    border: "border-amber-400/20 hover:border-amber-400/50",
-                                    bg: "hover:bg-amber-400/5",
-                                },
-                                {
-                                    platform: "LeetCode",
-                                    count: 131,
-                                    label: "Problems Solved",
-                                    profile: "https://leetcode.com/u/tuser579/",
-                                    color: "text-orange-400",
-                                    border: "border-orange-400/20 hover:border-orange-400/50",
-                                    bg: "hover:bg-orange-400/5",
-                                },
-                                {
-                                    platform: "Beecrowd",
-                                    count: 164,
-                                    label: "Problems Solved",
-                                    profile: "https://judge.beecrowd.com/en/profile/948665",
-                                    color: "text-green-400",
-                                    border: "border-green-400/20 hover:border-green-400/50",
-                                    bg: "hover:bg-green-400/5",
-                                },
-                            ].map(({ platform, count, label, profile, color, border, bg }) => (
-                                <a
-                                    key={platform}
-                                    href={profile}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className={`glass-card flex items-center justify-between p-4 rounded-xl border transition-all duration-300 group ${border} ${bg}`}
-                                >
-                                    {/* Left Side: Platform & Label */}
-                                    <div className="flex flex-col">
-                                        <span className={`font-bold sm:text-base tracking-wide ${color}`}>{platform}</span>
-                                        {/* <span className="text-xs text-muted-foreground mt-0.5">{label}</span> */}
-                                    </div>
-
-                                    {/* Right Side: Count & Arrow */}
-                                    <div className="flex items-center gap-4">
-                                        <span className="font-mono text-xl sm:text-xl font-black text-foreground">{count}</span>
-                                        <svg
-                                            className={`w-4 h-4 ${color} opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300`}
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            stroke="currentColor"
-                                        >
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                                        </svg>
-                                    </div>
-                                </a>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Education */}
-                    <div>
-                        <h3 className="text-xs font-bold uppercase tracking-widest text-primary mb-3 font-mono">Education</h3>
-                        <div className="glass-card rounded-xl p-4 border border-border/40 border-l-2 border-l-primary">
-                            <p className="font-bold text-foreground text-sm">B.Sc. in Computer Science and Engineering (CSE)</p>
-                            <p className="text-muted-foreground text-xs mt-0.5">Daffodil International University (DIU)</p>
-                            <p className="text-primary font-mono text-xs mt-1">2024 – Present · DSC, Asulia, Birulia, Dhaka-1216, Bangladesh</p>
-                        </div>
-                    </div>
-
-                    {/* Certifications & Competitions */}
-                    <div>
-                        <h3 className="text-xs font-bold uppercase tracking-widest text-primary mb-3 font-mono">Certifications & Competitions</h3>
-                        <div className="space-y-3">
-                            {certifications.map((cert) => (
-                                <div key={cert.title} className="glass-card rounded-xl p-4 border border-border/40 hover:border-primary/30 transition-all duration-300 group">
-                                    <div className="flex items-start justify-between mb-1">
-                                        <p className="font-bold text-foreground text-sm group-hover:text-primary transition-colors leading-snug">
-                                            {cert.title}
-                                        </p>
-                                        <span className="text-[10px] text-muted-foreground font-mono shrink-0 ml-2 mt-0.5">
-                                            {cert.date}
-                                        </span>
-                                    </div>
-                                    <p className="text-primary/70 text-[10px] font-mono mb-2">{cert.issuer}</p>
-                                    <p className="text-foreground/70 text-xs leading-relaxed">{cert.description}</p>
-                                    {cert.credentialUrl && (
-                                        <a
-                                            href={cert.credentialUrl}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-1 mt-2 text-[10px] text-primary hover:underline font-mono"
-                                        >
-                                            View Credential <ExternalLink className="w-3 h-3" />
-                                        </a>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Languages */}
-                    <div>
-                        <h3 className="text-xs font-bold uppercase tracking-widest text-primary mb-2 font-mono">Languages</h3>
-                        <div className="flex gap-3">
-                            {[{ lang: "Bengali", level: "Native" }, { lang: "English", level: "Intermediate" }].map(({ lang, level }) => (
-                                <div key={lang} className="glass-card rounded-lg px-4 py-2 border border-border/40 text-center">
-                                    <p className="font-semibold text-foreground text-xs">{lang}</p>
-                                    <p className="text-muted-foreground text-[10px]">{level}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+                  </div>
+                  <p style={{ color: "var(--text-secondary)", fontSize: "0.78rem", lineHeight: 1.6, marginBottom: "0.5rem" }}><span style={{ color: "var(--violet)", fontWeight: 600 }}>Overview: </span>{desc}</p>
+                  <div style={{ marginBottom: "0.5rem" }}>
+                    {highlights && highlights.map((h, idx) => (
+                      <div key={idx} style={{ display: "flex", gap: "0.4rem", alignItems: "flex-start", marginBottom: "0.2rem" }}>
+                        <span style={{ color: "var(--cyan)", fontSize: "0.6rem", marginTop: 3 }}>▹</span>
+                        <span style={{ color: "var(--text-secondary)", fontSize: "0.73rem", lineHeight: 1.5 }}>{h}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "0.3rem" }}>
+                    {tech.map(t => <span key={t} style={{ fontSize: "0.65rem", padding: "0.15rem 0.55rem", borderRadius: 9999, border: "1px solid var(--glass-border)", color: "var(--cyan)", fontFamily: "'JetBrains Mono',monospace", background: "rgba(0,212,255,0.08)" }}>{t}</span>)}
+                  </div>
                 </div>
+              ))}
+            </div>
+          </div>
 
-                {/* Bottom bar */}
-                <div className="shrink-0 border-t border-border/50 px-5 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-                    <p className="text-xs text-muted-foreground font-mono hidden sm:block">All links are clickable in the PDF</p>
-                    <div className="flex items-center gap-2 w-full sm:w-auto">
-                        <button onClick={onClose}
-                            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold border border-border text-muted-foreground hover:border-primary hover:text-primary transition-all">
-                            Close
-                        </button>
-                        <DownloadButton
-                            label="Download" iconSize="w-4 h-4"
-                            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-primary-foreground transition-all hover-lift glow disabled:opacity-60 disabled:cursor-not-allowed"
-                            style={{ backgroundImage: "var(--gradient-primary)" }}
-                        />
-                    </div>
+          {/* Problem Solving */}
+          <div>
+            <h3 style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--cyan)", marginBottom: "0.75rem" }}>Problem Solving</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              {[
+                { platform: "Codeforces", count: 500, profile: "https://codeforces.com/profile/Tu.ser", color: "#3b82f6" },
+                { platform: "CodeChef",  count: 508, profile: "https://www.codechef.com/users/tuser579", color: "#f59e0b" },
+                { platform: "LeetCode",  count: 131, profile: "https://leetcode.com/u/tuser579/",       color: "#f97316" },
+                { platform: "Beecrowd",  count: 164, profile: "https://judge.beecrowd.com/en/profile/948665", color: "#10b981" },
+              ].map(({ platform, count, profile, color }) => (
+                <a key={platform} href={profile} target="_blank" rel="noopener noreferrer" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.65rem 1rem", borderRadius: 10, background: "var(--glass-bg)", border: `1px solid ${color}35`, textDecoration: "none", transition: "all 0.2s", boxShadow: "var(--glow-card)" }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = `${color}60`; e.currentTarget.style.background = `${color}10`; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = `${color}35`; e.currentTarget.style.background = "var(--glass-bg)"; }}>
+                  <span style={{ color, fontWeight: 700, fontFamily: "'Outfit',sans-serif", fontSize: "0.9rem" }}>{platform}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                    <span style={{ fontFamily: "'JetBrains Mono',monospace", fontWeight: 800, color: "var(--text-primary)", fontSize: "1rem" }}>{count}</span>
+                    <ExternalLink size={13} style={{ color }} />
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+
+          {/* Education */}
+          <div>
+            <h3 style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--cyan)", marginBottom: "0.75rem" }}>Education</h3>
+            <div style={{ background: "var(--glass-bg)", border: "1px solid var(--glass-border)", borderLeft: "3px solid var(--cyan)", borderRadius: 12, padding: "1rem", boxShadow: "var(--glow-card)" }}>
+              <p style={{ fontWeight: 700, color: "var(--text-primary)", fontSize: "0.9rem" }}>B.Sc. in Computer Science & Engineering</p>
+              <p style={{ color: "var(--text-secondary)", fontSize: "0.8rem", marginTop: 3 }}>Daffodil International University (DIU)</p>
+              <p style={{ color: "var(--cyan)", fontFamily: "'JetBrains Mono',monospace", fontSize: "0.72rem", marginTop: 4, fontWeight: 600 }}>2024 – Present · DSC, Asulia, Birulia, Dhaka</p>
+            </div>
+          </div>
+
+          {/* Certifications */}
+          <div>
+            <h3 style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--cyan)", marginBottom: "0.75rem" }}>Certifications & Competitions</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+              {certifications.map((cert) => (
+                <div key={cert.title} style={{ background: "var(--glass-bg)", border: "1px solid var(--glass-border)", borderRadius: 12, padding: "0.9rem", boxShadow: "var(--glow-card)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <p style={{ fontWeight: 700, color: "var(--text-primary)", fontSize: "0.85rem", lineHeight: 1.4 }}>{cert.title}</p>
+                    <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.65rem", color: "var(--text-secondary)", whiteSpace: "nowrap", marginLeft: "0.5rem" }}>{cert.date}</span>
+                  </div>
+                  <p style={{ color: "var(--violet)", fontFamily: "'JetBrains Mono',monospace", fontSize: "0.7rem", marginTop: 3, fontWeight: 600 }}>{cert.issuer}</p>
+                  <p style={{ color: "var(--text-secondary)", fontSize: "0.78rem", marginTop: 5, lineHeight: 1.5 }}>{cert.description}</p>
+                  {cert.credentialUrl && (
+                    <a href={cert.credentialUrl} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem", marginTop: 7, fontSize: "0.7rem", color: "var(--cyan)", textDecoration: "none", fontFamily: "'JetBrains Mono',monospace", fontWeight: 600 }}>
+                      View Credential <ExternalLink size={11} />
+                    </a>
+                  )}
                 </div>
-            </motion.div>
-        </motion.div>
-    </AnimatePresence >
+              ))}
+            </div>
+          </div>
+
+          {/* Languages */}
+          <div>
+            <h3 style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--cyan)", marginBottom: "0.6rem" }}>Languages</h3>
+            <div style={{ display: "flex", gap: "0.75rem" }}>
+              {[{ lang: "Bengali", level: "Native" }, { lang: "English", level: "Intermediate" }].map(({ lang, level }) => (
+                <div key={lang} style={{ background: "var(--glass-bg)", border: "1px solid var(--glass-border)", borderRadius: 10, padding: "0.5rem 1rem", textAlign: "center", boxShadow: "var(--glow-card)" }}>
+                  <p style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: "0.82rem" }}>{lang}</p>
+                  <p style={{ color: "var(--text-secondary)", fontSize: "0.7rem" }}>{level}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom bar */}
+        <div style={{ borderTop: "1px solid var(--glass-border)", padding: "0.9rem 1.25rem", display: "flex", flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
+          <p style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.7rem", color: "var(--text-secondary)" }} className="hidden sm:block">All links are clickable in the PDF</p>
+          <div style={{ display: "flex", gap: "0.6rem" }}>
+            <button onClick={onClose} style={{ padding: "0.6rem 1.2rem", borderRadius: 9999, border: "1px solid var(--glass-border)", color: "var(--text-secondary)", background: "transparent", cursor: "pointer", fontSize: "0.85rem", fontWeight: 600, transition: "all 0.2s", fontFamily: "'Outfit',sans-serif" }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--cyan)"; e.currentTarget.style.color = "var(--cyan)"; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--glass-border)"; e.currentTarget.style.color = "var(--text-secondary)"; }}>
+              Close
+            </button>
+            <DownloadButton label="Download PDF" iconSize="w-4 h-4" className="btn-primary text-sm" />
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  </AnimatePresence>
 );
 
 // ─────────────────────────────────────────────────────────────
 //  HERO
 // ─────────────────────────────────────────────────────────────
+const SOCIALS = [
+  { icon: Github,   href: "https://github.com/tuser579",                                           label: "GitHub",   color: "#94a3b8" },
+  { icon: Linkedin, href: "https://www.linkedin.com/in/md-muttakiul-islam-tuser-36b104388",         label: "LinkedIn", color: "#0ea5e9" },
+  { icon: Twitter,  href: "https://x.com/md_57990667",                                             label: "Twitter",  color: "#38bdf8" },
+  { icon: Facebook, href: "https://www.facebook.com/mohammad.osman.98622",                         label: "Facebook", color: "#60a5fa" },
+];
+
+const STATS = [
+  { value: "4+",    label: "Projects"      },
+  { value: "1303+", label: "Problems Solved"},
+  { value: "MERN",  label: "Stack"          },
+];
+
 const Hero = () => {
-    const [showResume, setShowResume] = useState(false);
+  const [showResume, setShowResume] = useState(false);
 
-    return (
-        <>
-            {showResume && <ResumeModal onClose={() => setShowResume(false)} />}
+  return (
+    <>
+      {showResume && <ResumeModal onClose={() => setShowResume(false)} />}
 
-            <section id="home" className="min-h-screen flex items-center section-padding pt-28">
-                <div className="container mx-auto">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      <section
+        id="home"
+        className="min-h-screen flex items-center pt-28 pb-16 w-full px-4 sm:px-6 lg:px-8"
+      >
+        <div className="w-full max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center w-full">
 
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
-                            transition={{ duration: 0.8, delay: 0.3 }}
-                            className="flex justify-center lg:justify-end order-first lg:order-last"
-                        >
-                            <div className="relative">
-                                <div className="w-64 h-64 sm:w-80 sm:h-80 rounded-2xl overflow-hidden glow animate-pulse-glow">
-                                    <Image src={profilePhoto} alt="Profile photo" fill className="object-cover rounded" priority />
-                                </div>
-                                <div className="absolute -z-10 inset-0 rounded-2xl rotate-6 bg-primary/20" />
-                            </div>
-                        </motion.div>
+            {/* ── Left: Text ── */}
+            <motion.div
+              initial={{ opacity: 0, x: -40 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+              className="order-2 lg:order-1 lg:col-span-7 flex flex-col items-center text-center lg:items-start lg:text-left w-full"
+            >
+              {/* Tag */}
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}>
+                <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.78rem", color: "var(--cyan)", letterSpacing: "0.12em", textTransform: "uppercase", display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
+                  <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "var(--cyan)", boxShadow: "0 0 8px var(--cyan)", animation: "dot-pulse 1.5s ease-in-out infinite" }} />
+                  Hello, I&apos;m
+                </span>
+              </motion.div>
 
-                        <motion.div
-                            initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 0.8 }} className="order-last lg:order-first"
-                        >
-                            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
-                                className="font-mono text-primary mb-4 text-sm tracking-wider">
-                                Hello, I&apos;m
-                            </motion.p>
+              {/* Name */}
+              <motion.h1
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15, duration: 0.7 }}
+                style={{
+                  fontFamily: "'Outfit',sans-serif",
+                  fontWeight: 900,
+                  fontSize: "clamp(2.4rem, 5.5vw, 4rem)",
+                  lineHeight: 1.08,
+                  letterSpacing: "-0.03em",
+                  marginTop: "0.65rem",
+                  marginBottom: "0.5rem",
+                  color: "var(--text-primary)",
+                }}
+              >
+                MD.MUTTAKIUL
+                <br />
+                ISLAM{" "}
+                <span style={{ background: "linear-gradient(135deg,#00d4ff,#a78bfa,#f0abfc)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+                  TUSER
+                </span>
+              </motion.h1>
 
-                            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight mb-4">
-                                <span className="text-foreground">MD.MUTTAKIUL ISLAM</span>{" "}
-                                <span className="text-gradient">TUSER</span>
-                            </h1>
+              {/* Role */}
+              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
+                style={{ fontFamily: "'JetBrains Mono',monospace", color: "var(--cyan)", fontSize: "0.95rem", marginBottom: "0.85rem", fontWeight: 600 }}>
+                Full MERN Stack Developer · Frontend Focused
+              </motion.p>
 
-                            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
-                                className="text-lg sm:text-xl text-muted-foreground mb-2 font-mono">
-                                Full MERN Stack Developer | Fronted Focused
-                            </motion.p>
+              {/* Bio */}
+              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
+                style={{ color: "var(--text-secondary)", fontSize: "0.95rem", lineHeight: 1.7, maxWidth: 500, marginBottom: "1.5rem" }}
+                className="mx-auto lg:mx-0"
+              >
+                I craft pixel-perfect, scalable web applications with React, Next.js, Node.js, Express &amp; MongoDB — driven by clean code and delightful UX.
+              </motion.p>
 
-                            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
-                                className="text-muted-foreground max-w-lg mb-8 leading-relaxed">
-                                I build web applications using React, Next.js, Node.js, Express, and MongoDB.
-                                Passionate about clean code and pixel-perfect UIs.
-                            </motion.p>
+              {/* Stats pills */}
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}
+                className="flex flex-wrap justify-center lg:justify-start gap-2.5 mb-7 w-full">
+                {STATS.map(({ value, label }) => (
+                  <div key={label} style={{
+                    display: "inline-flex", alignItems: "center", gap: "0.4rem",
+                    padding: "0.35rem 0.9rem", borderRadius: 9999,
+                    background: "var(--glass-bg)", border: "1px solid var(--glass-border)",
+                    backdropFilter: "blur(12px)",
+                    boxShadow: "var(--glow-card)",
+                  }}>
+                    <span style={{ fontFamily: "'JetBrains Mono',monospace", fontWeight: 700, color: "var(--cyan)", fontSize: "0.82rem" }}>{value}</span>
+                    <span style={{ color: "var(--text-secondary)", fontSize: "0.75rem", fontWeight: 500 }}>{label}</span>
+                  </div>
+                ))}
+              </motion.div>
 
-                            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
-                                className="flex flex-col sm:flex-row gap-4 mb-8">
-                                <button onClick={() => setShowResume(true)}
-                                    className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold text-primary-foreground transition-all duration-300 glow hover-lift w-full sm:w-auto"
-                                    style={{ backgroundImage: "var(--gradient-primary)" }}>
-                                    <Eye className="w-4 h-4" />
-                                    Show Resume
-                                </button>
-                                <Link href="#contact"
-                                    className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold border border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 w-full sm:w-auto">
-                                    Contact Me
-                                </Link>
-                            </motion.div>
+              {/* CTA Buttons */}
+              <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }}
+                className="flex flex-wrap justify-center lg:justify-start gap-3.5 mb-8 w-full">
+                <button
+                  onClick={() => setShowResume(true)}
+                  className="btn-primary"
+                  style={{ fontSize: "0.9rem" }}
+                >
+                  <Eye size={16} /> View Resume
+                </button>
+                <Link href="#contact" className="btn-ghost" style={{ fontSize: "0.9rem" }}>
+                  Hire Me →
+                </Link>
+              </motion.div>
 
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}
-                                className="flex justify-center sm:justify-start gap-4">
-                                {[
-                                    { icon: Github, href: "https://github.com/tuser579", label: "GitHub" },
-                                    { icon: Linkedin, href: "https://www.linkedin.com/in/md-muttakiul-islam-tuser-36b104388", label: "LinkedIn" },
-                                    { icon: Twitter, href: "https://x.com/md_57990667", label: "Twitter" },
-                                    { icon: Facebook, href: "https://www.facebook.com/mohammad.osman.98622", label: "Facebook" },
-                                ].map(({ icon: Icon, href, label }) => (
-                                    <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={label}
-                                        className="p-3 rounded-lg hover:bg-primary hover:text-primary-foreground text-muted-foreground transition-all duration-300 hover-lift">
-                                        <Icon className="w-5 h-5" />
-                                    </a>
-                                ))}
-                            </motion.div>
-                        </motion.div>
+              {/* Social icons */}
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7 }}
+                className="flex justify-center lg:justify-start gap-3 w-full">
+                {SOCIALS.map(({ icon: Icon, href, label, color }) => (
+                  <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={label}
+                    style={{
+                      width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center",
+                      borderRadius: 9999, background: "var(--glass-bg)", border: "1px solid var(--glass-border)",
+                      color: "var(--text-secondary)", textDecoration: "none", transition: "all 0.3s",
+                      boxShadow: "var(--glow-card)",
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.color = color; e.currentTarget.style.borderColor = `${color}50`; e.currentTarget.style.background = `${color}12`; e.currentTarget.style.boxShadow = `0 0 16px ${color}30`; e.currentTarget.style.transform = "translateY(-3px)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.color = "var(--text-secondary)"; e.currentTarget.style.borderColor = "var(--glass-border)"; e.currentTarget.style.background = "var(--glass-bg)"; e.currentTarget.style.boxShadow = "var(--glow-card)"; e.currentTarget.style.transform = "none"; }}
+                  >
+                    <Icon size={17} />
+                  </a>
+                ))}
+              </motion.div>
+            </motion.div>
 
+            {/* ── Right: 3D Profile Frame ── */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.85 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.9, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              className="order-1 lg:order-2 lg:col-span-5 flex justify-center lg:justify-end items-center w-full"
+            >
+              <div style={{ position: "relative", width: "100%", maxWidth: 360, display: "flex", justifyContent: "center" }} className="lg:justify-end">
+                <div style={{ position: "relative", width: "100%", maxWidth: 330 }}>
+                  {/* Outer glow ring */}
+                  <div style={{
+                    position: "absolute", inset: -15, borderRadius: 28,
+                    background: "conic-gradient(from 0deg, #00d4ff, #7c3aed, #f0abfc, #00d4ff)",
+                    filter: "blur(20px)", opacity: 0.35, animation: "spin-slow 12s linear infinite",
+                    zIndex: 0,
+                  }} />
+
+                  {/* Prism border frame */}
+                  <div className="glass-prism animate-float-slow"
+                    style={{ position: "relative", zIndex: 1, borderRadius: 24, padding: 4, width: "100%" }}>
+                    <div style={{
+                      width: "100%",
+                      aspectRatio: "1 / 1",
+                      borderRadius: 20,
+                      overflow: "hidden",
+                      position: "relative",
+                    }}>
+                      <Image
+                        src={profilePhoto}
+                        alt="MD. Muttakiul Islam Tuser"
+                        fill
+                        className="object-cover"
+                        priority
+                        style={{ filter: "brightness(0.95) saturate(1.05)" }}
+                      />
+                      {/* Shine overlay */}
+                      <div style={{
+                        position: "absolute", inset: 0,
+                        background: "linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 60%)",
+                        pointerEvents: "none",
+                      }} />
                     </div>
+                  </div>
+
+                  {/* Floating badge — bottom left */}
+                  <motion.div
+                    animate={{ y: [0, -6, 0] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                    style={{
+                      position: "absolute", bottom: -12, left: -14, zIndex: 2,
+                      background: "var(--bg-layer)", backdropFilter: "blur(16px)",
+                      border: "1px solid var(--glass-border-hover)", borderRadius: 12,
+                      padding: "0.45rem 0.85rem", display: "flex", alignItems: "center", gap: "0.4rem",
+                      boxShadow: "var(--glow-card)",
+                    }}
+                  >
+                    <span style={{ fontSize: 16 }}>⚡</span>
+                    <div>
+                      <p style={{ fontFamily: "'Outfit',sans-serif", fontWeight: 700, color: "var(--text-primary)", fontSize: "0.75rem", lineHeight: 1 }}>MERN Stack</p>
+                      <p style={{ fontFamily: "'JetBrains Mono',monospace", color: "var(--cyan)", fontSize: "0.6rem", fontWeight: 600 }}>Full-Stack Dev</p>
+                    </div>
+                  </motion.div>
+
+                  {/* Floating badge — top right */}
+                  <motion.div
+                    animate={{ y: [0, 6, 0] }}
+                    transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                    style={{
+                      position: "absolute", top: -12, right: -12, zIndex: 2,
+                      background: "var(--bg-layer)", backdropFilter: "blur(16px)",
+                      border: "1px solid var(--glass-border-hover)", borderRadius: 12,
+                      padding: "0.4rem 0.75rem", display: "flex", alignItems: "center", gap: "0.35rem",
+                      boxShadow: "var(--glow-card)",
+                    }}
+                  >
+                    <span style={{ fontSize: 14 }}>🏆</span>
+                    <p style={{ fontFamily: "'JetBrains Mono',monospace", fontWeight: 700, color: "var(--violet)", fontSize: "0.68rem" }}>1303+ Solved</p>
+                  </motion.div>
                 </div>
-            </section>
-        </>
-    );
+              </div>
+            </motion.div>
+
+          </div>
+        </div>
+
+        {/* Scroll hint */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.2 }}
+          style={{ position: "absolute", bottom: "1.5rem", left: "50%", transform: "translateX(-50%)", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.4rem" }}
+        >
+          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "0.6rem", color: "var(--text-muted)", letterSpacing: "0.1em", fontWeight: 600 }}>SCROLL</span>
+          <motion.div
+            animate={{ y: [0, 6, 0] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+            style={{ width: 2, height: 28, background: "linear-gradient(var(--cyan), transparent)", borderRadius: 9999 }}
+          />
+        </motion.div>
+      </section>
+    </>
+  );
 };
 
 export default Hero;
