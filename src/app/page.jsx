@@ -1,4 +1,7 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+import LoadingScreen from "./loading";
 import FloatingTechBg from "../../Components/ui/FloatingTechBg";
 import Navbar from "../../Components/ui/Navbar";
 import Hero from "../../Components/ui/Hero";
@@ -13,20 +16,25 @@ import CertificationsSection from "../../Components/ui/CertificationsSection";
 import ProblemSolving from "../../Components/ui/ProblemSolving";
 
 export default function Home() {
+  const [loadingComplete, setLoadingComplete] = useState(false);
+
   return (
     <div className="relative min-h-screen bg-background">
-        <FloatingTechBg />
-        <Navbar />
-        <Hero />
-        <About />
-        <ProblemSolving />
-        <Skills />
-        <Projects />
-        <GithubStats />
-        <ExperienceEducation />
-        <CertificationsSection />
-        <Contact />
-        <Footer />
+      {!loadingComplete && (
+        <LoadingScreen onComplete={() => setLoadingComplete(true)} />
+      )}
+      <FloatingTechBg />
+      <Navbar />
+      <Hero />
+      <About />
+      <ProblemSolving />
+      <Skills />
+      <Projects />
+      <GithubStats />
+      <ExperienceEducation />
+      <CertificationsSection />
+      <Contact />
+      <Footer />
     </div>
   );
 }

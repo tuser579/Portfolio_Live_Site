@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
+import profilePhoto from "../../public/lustro-Gemini_Generated_Image_kkbq5akkbq5akkbq.png";
 
 const CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&";
 
@@ -41,10 +43,10 @@ const LoadingScreen = ({ onComplete }) => {
   // Simulate loading progress
   useEffect(() => {
     const steps = [
-      { target: 30,  delay: 200  },
-      { target: 65,  delay: 600  },
-      { target: 88,  delay: 400  },
-      { target: 100, delay: 500  },
+      { target: 35,  delay: 150 },
+      { target: 70,  delay: 350 },
+      { target: 90,  delay: 300 },
+      { target: 100, delay: 350 },
     ];
 
     let timeout;
@@ -63,18 +65,17 @@ const LoadingScreen = ({ onComplete }) => {
               setTimeout(() => {
                 setPhase(1);
                 setScramble(true);
-                // Stagger line reveals
                 [0, 1, 2].forEach((i) =>
-                  setTimeout(() => setLinesDone((p) => { const n=[...p]; n[i]=true; return n; }), i * 300)
+                  setTimeout(() => setLinesDone((p) => { const n = [...p]; n[i] = true; return n; }), i * 250)
                 );
-                setTimeout(() => setPhase(2), 1800);
-                setTimeout(() => onComplete?.(), 2400);
-              }, 300);
+                setTimeout(() => setPhase(2), 1500);
+                setTimeout(() => onComplete?.(), 2000);
+              }, 250);
             } else {
               run(stepIdx + 1);
             }
           }
-        }, 18);
+        }, 14);
       }, delay);
     };
 
@@ -83,9 +84,9 @@ const LoadingScreen = ({ onComplete }) => {
   }, [onComplete]);
 
   const lines = [
-    { text: "WELCOME TO",       mono: true,  small: true  },
-    { text: "MY PORTFOLIO",     mono: false, small: false },
-    { text: "SITE",             mono: false, small: false },
+    { text: "WELCOME TO",   mono: true,  small: true  },
+    { text: "MY PORTFOLIO", mono: false, small: false },
+    { text: "SITE",         mono: false, small: false },
   ];
 
   return (
@@ -94,34 +95,41 @@ const LoadingScreen = ({ onComplete }) => {
         <motion.div
           key="loader"
           initial={{ opacity: 1 }}
-          exit={{ opacity: 0, scale: 1.04 }}
+          exit={{ opacity: 0, scale: 1.03 }}
           transition={{ duration: 0.5, ease: "easeInOut" }}
           className="fixed inset-0 z-[9999] flex flex-col items-center justify-center overflow-hidden"
-          style={{ background: "hsl(222 47% 8%)" }}
+          style={{ background: "#020818" }}
         >
-
-          {/* ── Scan line overlay ── */}
+          {/* ── Background radial glow ── */}
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
-              backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px)",
+              background: "radial-gradient(ellipse 65% 55% at 50% 50%, rgba(0, 212, 255, 0.12) 0%, rgba(124, 58, 237, 0.06) 45%, transparent 75%)",
+            }}
+          />
+
+          {/* ── Scan line subtle overlay ── */}
+          <div
+            className="absolute inset-0 pointer-events-none opacity-40"
+            style={{
+              backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.18) 2px, rgba(0,0,0,0.18) 4px)",
               zIndex: 1,
             }}
           />
 
-          {/* ── Corner brackets ── */}
+          {/* ── Corner tech brackets ── */}
           {[
-            "top-6 left-6 border-t border-l",
-            "top-6 right-6 border-t border-r",
-            "bottom-6 left-6 border-b border-l",
-            "bottom-6 right-6 border-b border-r",
+            "top-6 left-6 border-t-2 border-l-2",
+            "top-6 right-6 border-t-2 border-r-2",
+            "bottom-6 left-6 border-b-2 border-l-2",
+            "bottom-6 right-6 border-b-2 border-r-2",
           ].map((cls, i) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.1 * i, duration: 0.4 }}
-              className={`absolute w-8 h-8 border-primary/40 ${cls}`}
+              className={`absolute w-7 h-7 border-cyan/40 ${cls}`}
               style={{ zIndex: 2 }}
             />
           ))}
@@ -131,14 +139,71 @@ const LoadingScreen = ({ onComplete }) => {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="absolute top-6 left-1/2 -translate-x-1/2 font-mono text-[10px] tracking-[0.4em] text-primary/50 uppercase"
+            className="absolute top-6 left-1/2 -translate-x-1/2 font-mono text-[10px] sm:text-xs tracking-[0.35em] text-cyan/70 uppercase font-semibold"
             style={{ zIndex: 2 }}
           >
-            SYS_INIT · {new Date().getFullYear()}
+            SYS_INIT · TUSER_PORTFOLIO
           </motion.div>
 
-          {/* ── Main content ── */}
-          <div className="relative z-10 text-center px-6 w-full max-w-3xl">
+          {/* ── Main Center Content ── */}
+          <div className="relative z-10 flex flex-col items-center justify-center text-center px-6 w-full max-w-3xl">
+
+            {/* ── PHOTO IN CENTER (Always visible during loading) ── */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.7 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              className="relative mb-6 flex items-center justify-center"
+            >
+              {/* Outer rotating neon dash ring 1 */}
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
+                className="absolute w-36 h-36 sm:w-44 sm:h-44 rounded-full border-2 border-dashed border-cyan/40 pointer-events-none"
+              />
+
+              {/* Inner rotating gradient ring 2 */}
+              <motion.div
+                animate={{ rotate: -360 }}
+                transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                className="absolute w-32 h-32 sm:w-40 sm:h-40 rounded-full border-2 border-t-cyan border-r-violet-500 border-b-transparent border-l-transparent pointer-events-none"
+                style={{ filter: "drop-shadow(0 0 12px rgba(0, 212, 255, 0.6))" }}
+              />
+
+              {/* Pulsing ambient glow behind photo */}
+              <div
+                className="absolute w-28 h-28 sm:w-36 sm:h-36 rounded-full pointer-events-none"
+                style={{
+                  background: "radial-gradient(circle, rgba(0, 212, 255, 0.45) 0%, rgba(124, 58, 237, 0.25) 60%, transparent 80%)",
+                  filter: "blur(14px)",
+                }}
+              />
+
+              {/* Centered User Photo Avatar */}
+              <div className="relative w-28 h-28 sm:w-36 sm:h-36 rounded-full p-[3px] bg-gradient-to-tr from-cyan-400 via-violet-500 to-fuchsia-400 shadow-[0_0_35px_rgba(0,212,255,0.4)] overflow-hidden">
+                <div className="w-full h-full rounded-full overflow-hidden bg-slate-950 relative">
+                  <Image
+                    src={profilePhoto}
+                    alt="MD. Muttakiul Islam Tuser"
+                    fill
+                    priority
+                    sizes="(max-width: 640px) 112px, 144px"
+                    className="object-cover object-top scale-105"
+                  />
+                </div>
+              </div>
+
+              {/* Circular Percentage Pill */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="absolute -bottom-2.5 px-3 py-0.5 rounded-full bg-slate-900/90 border border-cyan/40 backdrop-blur-md shadow-lg shadow-cyan/20"
+              >
+                <span className="font-mono text-xs font-bold text-cyan tabular-nums tracking-wider">
+                  {progress}%
+                </span>
+              </motion.div>
+            </motion.div>
 
             {phase === 0 && (
               <motion.div
@@ -147,83 +212,37 @@ const LoadingScreen = ({ onComplete }) => {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
-                className="flex flex-col items-center gap-10"
+                className="flex flex-col items-center gap-4 w-full max-w-xs"
               >
-                {/* Hex spinner */}
-                <div className="relative w-20 h-20">
-                  {[0, 1, 2].map((i) => (
-                    <motion.div
-                      key={i}
-                      animate={{ rotate: 360 }}
-                      transition={{
-                        duration: 2.5 - i * 0.5,
-                        repeat: Infinity,
-                        ease: "linear",
-                        direction: i % 2 === 0 ? "normal" : "reverse",
-                      }}
-                      className="absolute inset-0 rounded-full border border-primary/30"
-                      style={{
-                        inset: `${i * 10}px`,
-                        borderTopColor: `hsl(198 93% ${59 - i * 10}%)`,
-                        borderRightColor: "transparent",
-                      }}
-                    />
-                  ))}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span
-                      className="font-mono text-sm font-bold text-primary tabular-nums"
-                    >
-                      {String(progress).padStart(3, "0")}
-                    </span>
-                  </div>
-                </div>
-
                 {/* Progress bar */}
-                <div className="w-full max-w-xs">
-                  <div className="flex justify-between font-mono text-[10px] text-primary/40 mb-2 tracking-widest">
-                    <span>LOADING</span>
+                <div className="w-full mt-2">
+                  <div className="flex justify-between font-mono text-[10px] text-cyan/60 mb-1.5 tracking-widest uppercase">
+                    <span>LOADING SYSTEM</span>
                     <span>{progress}%</span>
                   </div>
-                  <div className="h-px w-full bg-primary/10 relative overflow-hidden">
+                  <div className="h-1.5 w-full bg-slate-900/80 rounded-full border border-cyan/20 overflow-hidden relative">
                     <motion.div
-                      className="absolute top-0 left-0 h-full"
+                      className="h-full rounded-full"
                       style={{
                         width: `${progress}%`,
-                        backgroundImage: "var(--gradient-primary)",
-                        boxShadow: "0 0 12px hsl(198 93% 59% / 0.8)",
-                        transition: "width 0.18s linear",
+                        backgroundImage: "var(--grad-primary, linear-gradient(90deg, #00d4ff, #7c3aed))",
+                        boxShadow: "0 0 14px rgba(0, 212, 255, 0.8)",
+                        transition: "width 0.12s ease-out",
                       }}
                     />
-                  </div>
-                  {/* Segmented dots */}
-                  <div className="flex gap-1.5 mt-3 justify-center">
-                    {Array.from({ length: 20 }).map((_, i) => (
-                      <div
-                        key={i}
-                        className="w-1 h-1 rounded-full transition-all duration-150"
-                        style={{
-                          background: progress >= (i + 1) * 5
-                            ? "hsl(198 93% 59%)"
-                            : "hsl(198 93% 59% / 0.15)",
-                          boxShadow: progress >= (i + 1) * 5
-                            ? "0 0 6px hsl(198 93% 59% / 0.6)"
-                            : "none",
-                        }}
-                      />
-                    ))}
                   </div>
                 </div>
 
                 {/* Status text cycling */}
                 <motion.p
-                  className="font-mono text-[11px] tracking-[0.3em] text-primary/40 uppercase"
-                  animate={{ opacity: [0.4, 1, 0.4] }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
+                  className="font-mono text-[11px] tracking-[0.25em] text-cyan/70 uppercase font-medium mt-1"
+                  animate={{ opacity: [0.5, 1, 0.5] }}
+                  transition={{ duration: 1.2, repeat: Infinity }}
                 >
-                  {progress < 30  ? "INITIALIZING SYSTEMS..."
-                  : progress < 65 ? "LOADING ASSETS..."
-                  : progress < 88 ? "RENDERING COMPONENTS..."
-                  :                 "ALMOST READY..."}
+                  {progress < 30  ? "INITIALIZING SYSTEM..."
+                  : progress < 65 ? "LOADING PORTFOLIO..."
+                  : progress < 90 ? "RENDERING ASSETS..."
+                  :                 "READY"}
                 </motion.p>
               </motion.div>
             )}
@@ -233,29 +252,27 @@ const LoadingScreen = ({ onComplete }) => {
                 key="reveal-phase"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="flex flex-col items-center gap-2"
+                className="flex flex-col items-center gap-1 mt-1"
               >
-                {lines.map(({ text, mono, small }, i) => (
+                {lines.map(({ text, small }, i) => (
                   <motion.div
                     key={i}
-                    initial={{ opacity: 0, y: 30, filter: "blur(12px)" }}
-                    animate={linesDone[i]
-                      ? { opacity: 1, y: 0, filter: "blur(0px)" }
-                      : {}}
-                    transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                    initial={{ opacity: 0, y: 20, filter: "blur(8px)" }}
+                    animate={linesDone[i] ? { opacity: 1, y: 0, filter: "blur(0px)" } : {}}
+                    transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                   >
                     <p
-                      className={`font-black leading-none tracking-tight select-none ${
+                      className={`font-black leading-tight select-none ${
                         small
-                          ? "text-xs tracking-[0.5em] text-primary/60 font-mono font-normal mb-3"
-                          : "text-[clamp(2.8rem,10vw,7rem)]"
+                          ? "text-xs tracking-[0.4em] text-cyan font-mono font-bold mb-1 uppercase"
+                          : "text-2xl sm:text-4xl tracking-tight"
                       }`}
                       style={!small ? {
-                        backgroundImage:      "var(--gradient-primary)",
+                        backgroundImage:      "var(--grad-primary, linear-gradient(135deg, #00d4ff 0%, #7c3aed 50%, #f0abfc 100%))",
                         WebkitBackgroundClip: "text",
                         WebkitTextFillColor:  "transparent",
                         backgroundClip:       "text",
-                        filter: "drop-shadow(0 0 40px hsl(198 93% 59% / 0.4))",
+                        filter: "drop-shadow(0 0 30px rgba(0, 212, 255, 0.4))",
                       } : {}}
                     >
                       <ScrambleText text={text} trigger={linesDone[i]} />
@@ -263,24 +280,11 @@ const LoadingScreen = ({ onComplete }) => {
                   </motion.div>
                 ))}
 
-                {/* Underline sweep */}
-                <motion.div
-                  initial={{ scaleX: 0 }}
-                  animate={{ scaleX: 1 }}
-                  transition={{ delay: 0.9, duration: 0.7, ease: "easeOut" }}
-                  className="mt-4 h-px w-48"
-                  style={{
-                    backgroundImage: "var(--gradient-primary)",
-                    transformOrigin: "left",
-                    boxShadow: "0 0 16px hsl(198 93% 59% / 0.5)",
-                  }}
-                />
-
                 <motion.p
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  transition={{ delay: 1.2 }}
-                  className="mt-3 font-mono text-[10px] tracking-[0.4em] text-primary/40 uppercase"
+                  transition={{ delay: 0.6 }}
+                  className="mt-2 font-mono text-xs tracking-[0.3em] text-cyan/70 font-semibold uppercase"
                 >
                   MD. MUTTAKIUL ISLAM TUSER
                 </motion.p>
@@ -293,12 +297,11 @@ const LoadingScreen = ({ onComplete }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
-            className="absolute bottom-6 left-1/2 -translate-x-1/2 font-mono text-[10px] tracking-[0.4em] text-primary/30 uppercase"
+            className="absolute bottom-6 left-1/2 -translate-x-1/2 font-mono text-[10px] sm:text-xs tracking-[0.35em] text-cyan/50 uppercase"
             style={{ zIndex: 2 }}
           >
             MERN · NEXT.JS · PORTFOLIO
           </motion.div>
-
         </motion.div>
       )}
     </AnimatePresence>

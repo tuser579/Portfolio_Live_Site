@@ -17,36 +17,283 @@ import { certifications } from "../../data/portfolio";
 // ─────────────────────────────────────────────────────────────
 async function generateAndDownloadPDF() {
   const { default: jsPDF } = await import("jspdf");
-  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-  const W = 210; const MARGIN = 18; const CW = W - MARGIN * 2; let y = 20;
-  const BLACK = [0,0,0]; const MUTED = [110,110,110]; const LINK = [10,100,200];
-  const checkPage = (need = 10) => { if (y + need > 279) { doc.addPage(); y = 18; } };
-  const hRule = () => { doc.setDrawColor(...MUTED); doc.setLineWidth(0.2); doc.line(MARGIN,y,W-MARGIN,y); y += 2.8; };
-  const sectionTitle = (title) => { checkPage(12); y += 3.0; doc.setFont("helvetica","bold"); doc.setFontSize(10); doc.setTextColor(...BLACK); doc.text(title.toUpperCase(),MARGIN,y); y += 1.3; hRule(); };
-  const addLink = (text, url, x, linkY, fontSize) => { doc.setFont("helvetica","normal"); doc.setFontSize(fontSize); doc.setTextColor(...LINK); doc.text(text,x,linkY); const tw = doc.getTextWidth(text); doc.setDrawColor(...LINK); doc.setLineWidth(0.15); doc.line(x,linkY+0.6,x+tw,linkY+0.6); const lh = fontSize*0.35; doc.link(x,linkY-lh,tw,lh+1,{url}); return tw; };
-  const bullet = (text, indent = 4) => { checkPage(6); doc.setFont("helvetica","normal"); doc.setFontSize(9.5); doc.setTextColor(...BLACK); doc.text("\u2022",MARGIN+indent,y); const lines = doc.splitTextToSize(text,CW-indent-5); doc.text(lines,MARGIN+indent+4,y); y += lines.length*3.4+0.5; };
-  doc.setFont("helvetica","bold"); doc.setFontSize(18); doc.setTextColor(...BLACK); doc.text("MD. MUTTAKIUL ISLAM TUSER",W/2,y,{align:"center"}); y+=5.0;
-  doc.setFont("helvetica","bold"); doc.setFontSize(12); doc.setTextColor(...BLACK); doc.text("Full-Stack Web Developer | MERN Stack | Frontend Focused",W/2,y,{align:"center"}); y+=4.5;
-  doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(...BLACK); doc.text("tusermon720@gmail.com  |  +880 1760-049326  |  DSC, Asulia, Birulia, Dhaka-1216, Bangladesh",W/2,y,{align:"center"}); y+=4.5;
-  const socials=[{label:"Portfolio",url:"https://portfolio-live-site.vercel.app/"},{label:"GitHub",url:"https://github.com/tuser579"},{label:"LinkedIn",url:"https://www.linkedin.com/in/md-muttakiul-islam-tuser-36b104388"}];
-  const sep="  |  "; doc.setFontSize(9); const sepW=doc.getTextWidth(sep); const lWs=socials.map(s=>doc.getTextWidth(s.label)); const totalW=lWs.reduce((a,b)=>a+b,0)+sepW*(socials.length-1); let sx=(W-totalW)/2;
-  socials.forEach((s,i)=>{addLink(s.label,s.url,sx,y,9);sx+=lWs[i];if(i<socials.length-1){doc.setFont("helvetica","normal");doc.setTextColor(...MUTED);doc.text(sep,sx,y);sx+=sepW;}}); y+=5;
-  sectionTitle("Career Objective"); doc.setFont("helvetica","normal"); doc.setFontSize(9.5); doc.setTextColor(...BLACK);
-  const summary="A MERN-Stack Developer by passion, I started my coding journey with HTML, CSS, and JavaScript before diving deep into React, Next.js Node.js, Express.js, and MongoDB. Through car rental booking systems, community skill-sharing platforms, cityfix issue solving systems, e-commerce website applications. Proficient in responsive UI development with Tailwind CSS and deployment workflows using Vercel, Netlify, and Firebase. I have honed my ability to solve problems. My goal is simple: build applications that are practical, meaningful, and delightful for users.";
-  const sumLines=doc.splitTextToSize(summary,CW); doc.text(sumLines,MARGIN,y); y+=sumLines.length*3.5+2;
-  sectionTitle("Technical Skills");
-  const skillGroups=[["Frontend Development","HTML5, CSS3, Tailwind CSS, JavaScript (ES6+), TypeScript, React.js, Next.js"],["Backend Development","Node.js, Express.js"],["Database","MongoDB, MySQL"],["Version Control & Deploy","Git, GitHub, Netlify, Cloudflare, Surge, Firebase, Vercel, Railway, Render"],["Languages","C, C++"],["Soft Skills","Team Collaboration, Problem-Solving, Adaptability"]];
-  skillGroups.forEach(([label,value])=>{doc.setFont("helvetica","bold");doc.setFontSize(9.5);doc.setTextColor(...BLACK);const labelText=label+":  ";const lw=doc.getTextWidth(labelText);doc.text(labelText,MARGIN+2,y);doc.setFont("helvetica","normal");doc.setTextColor(...BLACK);const valLines=doc.splitTextToSize(value,CW-2-lw);doc.text(valLines,MARGIN+2+lw,y);y+=valLines.length*4+0.5;});
-  sectionTitle("Projects");
-  projects.slice(0,3).forEach((p)=>{checkPage(38);doc.setFont("helvetica","bold");doc.setFontSize(10.5);doc.setTextColor(...BLACK);const titleLabel="Title: ";const titleLabelWidth=doc.getTextWidth(titleLabel);doc.text(titleLabel,MARGIN,y);doc.setFont("helvetica","bold");doc.text(p.name,MARGIN+titleLabelWidth,y);const liveLabel="Live Demo";const separator="   |   ";const repoLabel="GitHub";doc.setFontSize(9.5);const repoTW=doc.getTextWidth(repoLabel);const sepTW=doc.getTextWidth(separator);const liveTW=doc.getTextWidth(liveLabel);const rowW=liveTW+sepTW+repoTW;let rx=W-MARGIN-rowW;addLink(liveLabel,p.liveLink,rx,y,9.5);rx+=liveTW;doc.setFont("helvetica","normal");doc.setTextColor(...MUTED);doc.text(separator,rx,y);rx+=sepTW;addLink(repoLabel,p.githubLink,rx,y,9.5);y+=4;doc.setFont("helvetica","bold");doc.setFontSize(10);doc.setTextColor(...BLACK);const overviewLabel="Overview: ";const oLabelW=doc.getTextWidth(overviewLabel);doc.text(overviewLabel,MARGIN,y);doc.setFont("helvetica","normal");doc.setTextColor(...BLACK);const overviewLines=doc.splitTextToSize(p.shortDescription,CW-oLabelW);doc.text(overviewLines,MARGIN+oLabelW,y);y+=(overviewLines.length*3.3)+1.5;if(p.highlights&&Array.isArray(p.highlights)){doc.setCharSpace(0);doc.setFont("helvetica","normal");doc.setTextColor(...BLACK);doc.setFontSize(9);p.highlights.slice(0,3).forEach((h)=>{checkPage(6);bullet(h);});}y+=2;checkPage(10);doc.setFont("helvetica","bold");doc.setFontSize(9.5);doc.setTextColor(...BLACK);const techLabel="Technologies:  ";const tlw=doc.getTextWidth(techLabel);doc.text(techLabel,MARGIN+4,y);doc.setFont("helvetica","normal");doc.setTextColor(...BLACK);const techStack=p.techStack.slice(0,5).join(", ");const techLines=doc.splitTextToSize(techStack,CW-4-tlw);doc.text(techLines,MARGIN+4+tlw,y);y+=(techLines.length*5)+2;});
-  sectionTitle("Problem Solving");
-  const problemSolvingData=[{platform:"Codeforces",count:"  500 Solved",url:"https://codeforces.com/profile/Tu.ser"},{platform:"CodeChef",count:"  508 Solved",url:"https://www.codechef.com/users/tuser579"},{platform:"LeetCode",count:"  131 Solved",url:"https://leetcode.com/u/tuser579/"},{platform:"Beecrowd",count:"  164 Solved",url:"https://judge.beecrowd.com/en/profile/948665"}];
-  problemSolvingData.forEach((item)=>{doc.setFont("helvetica","bold");doc.setFontSize(9.5);doc.setTextColor(...BLACK);const pLabel=`${item.platform}: `;doc.text(pLabel,MARGIN,y);doc.setFont("helvetica","normal");doc.setTextColor(...BLACK);doc.text(item.count,MARGIN+doc.getTextWidth(pLabel),y);const linkLabel="Profile Link";const lW=doc.getTextWidth(linkLabel);addLink(linkLabel,item.url,W-MARGIN-lW,y,9);y+=4.5;});
-  sectionTitle("Education"); doc.setFont("helvetica","bold"); doc.setFontSize(10); doc.setTextColor(...BLACK); doc.text("B.Sc in Computer Science and Engineering",MARGIN,y); doc.setFont("helvetica","normal"); doc.setTextColor(...BLACK); doc.text("2024 – Present",W-MARGIN,y,{align:"right"}); y+=4.5; doc.text("Daffodil International University (DIU), Dhaka",MARGIN,y); y+=5;
-  sectionTitle("Certifications");
-  certifications.slice(0,2).forEach((cert)=>{doc.setTextColor(...BLACK);doc.setFont("helvetica","bold");const iss=`${cert.issuer}:   `;doc.text(iss,MARGIN,y);doc.setFont("helvetica","normal");doc.setTextColor(...BLACK);const dLines=doc.splitTextToSize(cert.description,CW-doc.getTextWidth(iss)-25);doc.text(dLines,MARGIN+doc.getTextWidth(iss),y);if(cert.credentialUrl){const linkLabel="View";const linkW=doc.getTextWidth(linkLabel);addLink(linkLabel,cert.credentialUrl,W-MARGIN-linkW,y,9);}y+=dLines.length*3.5+1.5;});
-  sectionTitle("Languages"); bullet("Bengali (Native)",2); bullet("English (Intermediate)",2);
-  doc.save("MD_Muttakiul_Islam_Tuser_Resume.pdf");
+
+  const W = 210;
+  const H = 297;
+  const MARGIN = 18;
+  const CW = W - MARGIN * 2;
+
+  const BLACK = [15, 23, 42];
+  const MUTED = [100, 116, 139];
+  const LINK = [14, 116, 144];
+
+  // GAP: exact equal space between Section Title text and underline, AND between underline and Section Content
+  const GAP = 1.3;
+
+  function renderResumeContent(doc, startY) {
+    let y = startY;
+
+    const addLink = (text, url, x, linkY, fontSize) => {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(fontSize);
+      doc.setTextColor(...LINK);
+      doc.text(text, x, linkY);
+      const tw = doc.getTextWidth(text);
+      doc.setDrawColor(...LINK);
+      doc.setLineWidth(0.15);
+      doc.line(x, linkY + 0.5, x + tw, linkY + 0.5);
+      doc.link(x, linkY - fontSize * 0.35, tw, fontSize * 0.35 + 1, { url });
+      return tw;
+    };
+
+    const sectionTitle = (title) => {
+      y += 7.8; // space above section title
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(...BLACK);
+      doc.text(title.toUpperCase(), MARGIN, y);
+
+      const lineY = y + GAP;
+      doc.setDrawColor(180, 190, 205);
+      doc.setLineWidth(0.25);
+      doc.line(MARGIN, lineY, W - MARGIN, lineY);
+
+      // Distance from line to top of content letters = GAP
+      // Content font size ~9.5pt (cap height ~2.3mm) -> baseline = lineY + GAP + 2.3mm
+      y = lineY + GAP + 2.3;
+    };
+
+    const bullet = (text, indent = 3) => {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9.2);
+      doc.setTextColor(...BLACK);
+      doc.text("\u2022", MARGIN + indent, y);
+      const lines = doc.splitTextToSize(text, CW - indent - 4);
+      doc.text(lines, MARGIN + indent + 3.5, y);
+      y += (lines.length - 1) * 3.8 + 3.9;
+    };
+
+    // ── Header ──────────────────────────────────────────────────────────
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.setTextColor(...BLACK);
+    doc.text("MD. MUTTAKIUL ISLAM TUSER", W / 2, y, { align: "center" });
+    y += 5.8;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(51, 65, 85);
+    doc.text("Full-Stack Web Developer | MERN Stack | Frontend Focused", W / 2, y, { align: "center" });
+    y += 4.8;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9.2);
+    doc.setTextColor(71, 85, 105);
+    doc.text("tusermon720@gmail.com  |  +880 1760-049326  |  DSC, Asulia, Birulia, Dhaka-1216, Bangladesh", W / 2, y, { align: "center" });
+    y += 4.6;
+
+    const socials = [
+      { label: "Portfolio", url: "https://portfolio-live-site.vercel.app/" },
+      { label: "GitHub",    url: "https://github.com/tuser579" },
+      { label: "LinkedIn",  url: "https://www.linkedin.com/in/md-muttakiul-islam-tuser-36b104388" },
+    ];
+    const sep = "  |  ";
+    doc.setFontSize(9.2);
+    const sepW  = doc.getTextWidth(sep);
+    const lWs   = socials.map(s => doc.getTextWidth(s.label));
+    const totW  = lWs.reduce((a,b) => a+b, 0) + sepW * (socials.length - 1);
+    let sx = (W - totW) / 2;
+    socials.forEach((s, i) => {
+      addLink(s.label, s.url, sx, y, 9.2);
+      sx += lWs[i];
+      if (i < socials.length - 1) {
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...MUTED);
+        doc.text(sep, sx, y);
+        sx += sepW;
+      }
+    });
+
+    // ── Career Objective ────────────────────────────────────────────────
+    sectionTitle("Career Objective");
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9.2);
+    doc.setTextColor(...BLACK);
+    const summary = "A MERN-Stack Developer by passion, I started my coding journey with HTML, CSS, and JavaScript before diving deep into React, Next.js, Node.js, Express.js, and MongoDB. Through car rental booking systems, community skill-sharing platforms, cityfix issue solving systems, and e-commerce applications, I have honed my ability to solve real-world problems. Proficient in responsive UI development with Tailwind CSS and deployment workflows using Vercel, Netlify, and Firebase. My goal is simple: build applications that are practical, meaningful, and delightful for users.";
+    const sumLines = doc.splitTextToSize(summary, CW);
+    doc.text(sumLines, MARGIN, y, { align: "justify", maxWidth: CW });
+    y += (sumLines.length - 1) * 3.8;
+
+    // ── Technical Skills ────────────────────────────────────────────────
+    sectionTitle("Technical Skills");
+    const skillGroups = [
+      ["Frontend Development", "HTML5, CSS3, Tailwind CSS, JavaScript (ES6+), TypeScript, React.js, Next.js"],
+      ["Backend Development",  "Node.js, Express.js"],
+      ["Database",             "MongoDB, MySQL"],
+      ["Version Control & Deploy", "Git, GitHub, Netlify, Cloudflare, Firebase, Vercel, Railway, Render"],
+      ["Languages",            "C, C++"],
+      ["Soft Skills",          "Team Collaboration, Problem-Solving, Adaptability"],
+    ];
+    skillGroups.forEach(([label, value], idx) => {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9.2);
+      doc.setTextColor(...BLACK);
+      const lt = label + ":  ";
+      const lw = doc.getTextWidth(lt);
+      doc.text(lt, MARGIN + 2, y);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...BLACK);
+      const vl = doc.splitTextToSize(value, CW - 2 - lw);
+      doc.text(vl, MARGIN + 2 + lw, y);
+      if (idx < skillGroups.length - 1) {
+        y += (vl.length - 1) * 3.8 + 4.5;
+      } else {
+        y += (vl.length - 1) * 3.8;
+      }
+    });
+
+    // ── Projects ────────────────────────────────────────────────────────
+    sectionTitle("Projects");
+    const projectList = projects.slice(0, 3);
+    projectList.forEach((p, pIdx) => {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9.8);
+      doc.setTextColor(...BLACK);
+      const tl = "Title: ";
+      const tlw = doc.getTextWidth(tl);
+      doc.text(tl, MARGIN, y);
+      doc.text(p.name, MARGIN + tlw, y);
+
+      const liveLabel = "Live Demo";
+      const separator = "   |   ";
+      const repoLabel = "GitHub";
+      doc.setFontSize(9.2);
+      const liveTW = doc.getTextWidth(liveLabel);
+      const sepTW  = doc.getTextWidth(separator);
+      const repoTW = doc.getTextWidth(repoLabel);
+      let rx = W - MARGIN - liveTW - sepTW - repoTW;
+      addLink(liveLabel, p.liveLink, rx, y, 9.2);
+      rx += liveTW;
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...MUTED);
+      doc.text(separator, rx, y);
+      rx += sepTW;
+      addLink(repoLabel, p.githubLink, rx, y, 9.2);
+      y += 4.2;
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9.2);
+      doc.setTextColor(...BLACK);
+      const ol = "Overview: ";
+      const olw = doc.getTextWidth(ol);
+      doc.text(ol, MARGIN, y);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...BLACK);
+      const ovLines = doc.splitTextToSize(p.shortDescription, CW - olw);
+      doc.text(ovLines, MARGIN + olw, y);
+      y += (ovLines.length - 1) * 3.8 + 3.8;
+
+      if (p.highlights && Array.isArray(p.highlights)) {
+        p.highlights.slice(0, 3).forEach(h => bullet(h));
+      }
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9.2);
+      doc.setTextColor(...BLACK);
+      const techLbl = "Technologies:  ";
+      const tlbw = doc.getTextWidth(techLbl);
+      doc.text(techLbl, MARGIN + 3, y);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...BLACK);
+      const techL = doc.splitTextToSize(p.techStack.join(", "), CW - 3 - tlbw);
+      doc.text(techL, MARGIN + 3 + tlbw, y);
+
+      if (pIdx < projectList.length - 1) {
+        y += (techL.length - 1) * 3.8 + 5.6;
+      } else {
+        y += (techL.length - 1) * 3.8;
+      }
+    });
+
+    // ── Problem Solving ─────────────────────────────────────────────────
+    sectionTitle("Problem Solving");
+    const psData = [
+      { platform: "Codeforces", count: "500 Solved", url: "https://codeforces.com/profile/Tu.ser" },
+      { platform: "CodeChef",   count: "508 Solved", url: "https://www.codechef.com/users/tuser579" },
+      { platform: "LeetCode",   count: "131 Solved", url: "https://leetcode.com/u/tuser579/" },
+      { platform: "Beecrowd",   count: "164 Solved", url: "https://judge.beecrowd.com/en/profile/948665" },
+    ];
+    psData.forEach((item, i) => {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9.2);
+      doc.setTextColor(...BLACK);
+      const pl = item.platform + ": ";
+      doc.text(pl, MARGIN, y);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...BLACK);
+      doc.text(item.count, MARGIN + doc.getTextWidth(pl), y);
+      const ll = "Profile Link";
+      addLink(ll, item.url, W - MARGIN - doc.getTextWidth(ll), y, 9.2);
+      if (i < psData.length - 1) {
+        y += 4.5;
+      }
+    });
+
+    // ── Education ───────────────────────────────────────────────────────
+    sectionTitle("Education");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9.2);
+    doc.setTextColor(...BLACK);
+    doc.text("B.Sc in Computer Science and Engineering", MARGIN, y);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...BLACK);
+    doc.text("2024 \u2013 Present", W - MARGIN, y, { align: "right" });
+    y += 4.5;
+    doc.text("Daffodil International University (DIU), Dhaka", MARGIN, y);
+
+    // ── Certifications ──────────────────────────────────────────────────
+    sectionTitle("Certifications");
+    certifications.slice(0, 2).forEach((cert, idx) => {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9.2);
+      doc.setTextColor(...BLACK);
+      const iss = cert.issuer + ":   ";
+      doc.text(iss, MARGIN, y);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...BLACK);
+      const dL = doc.splitTextToSize(cert.description, CW - doc.getTextWidth(iss) - 18);
+      doc.text(dL, MARGIN + doc.getTextWidth(iss), y);
+      if (cert.credentialUrl) {
+        const lbl = "View";
+        addLink(lbl, cert.credentialUrl, W - MARGIN - doc.getTextWidth(lbl), y, 9.2);
+      }
+      if (idx < certifications.length - 1) {
+        y += (dL.length - 1) * 3.8 + 4.6;
+      } else {
+        y += (dL.length - 1) * 3.8;
+      }
+    });
+
+    // ── Languages ───────────────────────────────────────────────────────
+    sectionTitle("Languages");
+    bullet("Bengali (Native)", 2);
+    bullet("English (Intermediate)", 2);
+
+    return y;
+  }
+
+  // Pass 1: Measure total content height
+  const measureDoc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const totalContentHeight = renderResumeContent(measureDoc, 0);
+
+  // Calculate EXACT equal margin for top and bottom
+  const equalMargin = Math.round(((H - totalContentHeight) / 2) * 100) / 100;
+
+  // Pass 2: Render final PDF with exact equal top and bottom margins
+  const finalDoc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  renderResumeContent(finalDoc, equalMargin);
+
+  finalDoc.save("MD_Muttakiul_Islam_Tuser_Resume.pdf");
 }
 
 // ─────────────────────────────────────────────────────────────

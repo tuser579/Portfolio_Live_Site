@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Home, ArrowLeft } from "lucide-react";
 
 const NotFound404 = () => {
   const canvasRef = useRef(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -50,7 +52,10 @@ const NotFound404 = () => {
   }, []);
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-background">
+    <div
+      suppressHydrationWarning
+      className="relative min-h-screen flex items-center justify-center overflow-hidden bg-background"
+    >
 
       <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none" />
 
@@ -65,16 +70,16 @@ const NotFound404 = () => {
           initial={{ opacity: 0, scale: 0.6 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-          className="relative inline-block mb-2"
+          className="relative inline-block my-2 py-4"
         >
           <span
-            className="text-[clamp(7rem,25vw,18rem)] font-black leading-none select-none"
+            className="inline-block text-[clamp(6rem,22vw,14rem)] font-black leading-[1.05] py-2 px-3 select-none tracking-tight"
             style={{
-              backgroundImage:     "var(--gradient-primary)",
+              backgroundImage:     "var(--grad-primary, linear-gradient(135deg, #00d4ff 0%, #7c3aed 50%, #f0abfc 100%))",
               WebkitBackgroundClip:"text",
               WebkitTextFillColor: "transparent",
               backgroundClip:      "text",
-              filter:              "drop-shadow(0 0 60px hsl(198 93% 59% / 0.35))",
+              filter:              "drop-shadow(0 0 45px rgba(0, 212, 255, 0.4))",
             }}
           >
             404
@@ -83,7 +88,7 @@ const NotFound404 = () => {
             animate={{ x: [0, -4, 4, -2, 0], opacity: [0, 0.5, 0.3, 0.5, 0] }}
             transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 3 }}
             aria-hidden
-            className="absolute inset-0 text-[clamp(7rem,25vw,18rem)] font-black leading-none select-none text-primary"
+            className="absolute inset-0 inline-block text-[clamp(6rem,22vw,14rem)] font-black leading-[1.05] py-6 px-3 select-none text-cyan tracking-tight pointer-events-none"
             style={{ clipPath: "polygon(0 30%, 100% 30%, 100% 50%, 0 50%)", opacity: 0 }}
           >
             404
@@ -95,7 +100,7 @@ const NotFound404 = () => {
           animate={{ scaleX: 1 }}
           transition={{ duration: 0.6, delay: 0.3 }}
           className="h-px w-48 mx-auto mb-8"
-          style={{ backgroundImage: "var(--gradient-primary)" }}
+          style={{ backgroundImage: "var(--grad-primary, linear-gradient(135deg, #00d4ff, #7c3aed))" }}
         />
 
         <motion.div
@@ -103,7 +108,7 @@ const NotFound404 = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
         >
-          <p className="text-xs font-semibold tracking-[0.3em] uppercase text-primary mb-3 font-mono">
+          <p className="text-xs font-semibold tracking-[0.3em] uppercase text-cyan mb-3 font-mono">
             Page Not Found
           </p>
           <p className="text-foreground/60 text-base sm:text-lg max-w-sm mx-auto leading-relaxed mb-10">
@@ -120,8 +125,8 @@ const NotFound404 = () => {
         >
           <Link
             href="/"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm text-primary-foreground transition-all hover-lift glow w-full sm:w-auto justify-center"
-            style={{ backgroundImage: "var(--gradient-primary)" }}
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm text-white transition-all hover-lift glow w-full sm:w-auto justify-center shadow-lg"
+            style={{ backgroundImage: "var(--grad-primary, linear-gradient(135deg, #00d4ff, #7c3aed))" }}
           >
             <Home className="w-4 h-4" />
             Back to Home
