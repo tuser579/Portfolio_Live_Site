@@ -6,6 +6,7 @@ import { Readable } from "stream";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 function getFfmpegPath() {
   const binaryName = process.platform === "win32" ? "ffmpeg.exe" : "ffmpeg";
@@ -105,6 +106,57 @@ async function extractDirectFacebookCdn(targetUrl) {
   return null;
 }
 
+function extractYoutubeId(url) {
+  if (!url) return null;
+  const clean = url.trim();
+  if (/^[a-zA-Z0-9_-]{11}$/.test(clean)) return clean;
+  const match = clean.match(
+    /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/i
+  );
+  return match ? match[1] : null;
+}
+
+// Pure Node.js direct YouTube stream resolver (100% Serverless / Vercel Friendly)
+async function resolveYouTubeDirectStream(videoId, quality = "720p") {
+  const targetUrl = `https://www.youtube.com/watch?v=${videoId}`;
+  let formatCode = "720";
+  if (quality === "1080p" || quality === "1080") formatCode = "1080";
+  else if (quality === "480p" || quality === "480") formatCode = "480";
+  else if (quality === "360p" || quality === "360") formatCode = "360";
+  else if (quality === "audio" || quality === "mp3") formatCode = "mp3";
+
+  const initUrl = `https://loader.to/ajax/download.php?button=1&start=1&end=1&format=${formatCode}&url=${encodeURIComponent(targetUrl)}`;
+  try {
+    const initRes = await fetch(initUrl, {
+      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!initRes.ok) return null;
+    const init = await initRes.json();
+    if (init.download_url) return init.download_url;
+    if (!init.progress_url) return null;
+
+    for (let i = 0; i < 20; i++) {
+      await new Promise((r) => setTimeout(r, 1000));
+      try {
+        const progRes = await fetch(init.progress_url, {
+          headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
+          signal: AbortSignal.timeout(5000),
+        });
+        if (progRes.ok) {
+          const prog = await progRes.json();
+          if (prog.success === 1 && prog.download_url) {
+            return prog.download_url;
+          }
+        }
+      } catch (e) {}
+    }
+  } catch (err) {
+    console.warn("YouTube stream resolution error:", err.message);
+  }
+  return null;
+}
+
 export async function GET(req) {
   let tempFilePath = null;
 
@@ -143,8 +195,7 @@ export async function GET(req) {
     const contentType = isAudio ? "audio/mpeg" : "video/mp4";
     const filename = `${cleanTitle}.${ext}`;
 
-    // ── CASE 1: DIRECT STREAMING FOR FACEBOOK (100% Serverless / Vercel Friendly) ──
-    // If targetMediaUrl is a direct CDN URL or Facebook page URL, stream directly via pure Node fetch
+    // ── CASE 1: DIRECT STREAMING FOR FACEBOOK & YOUTUBE (100% Serverless / Vercel Friendly) ──
     const isDirectCdn =
       targetMediaUrl.includes("fbcdn.net") ||
       targetMediaUrl.includes("googlevideo.com") ||
@@ -157,6 +208,12 @@ export async function GET(req) {
       const streams = await extractDirectFacebookCdn(targetMediaUrl);
       if (streams) {
         streamUrlToFetch = (quality === "1080p" || quality === "hd") ? (streams.hd || streams.sd) : (streams.sd || streams.hd);
+      }
+    } else if (!streamUrlToFetch && !isFacebook) {
+      // Resolve direct stream from YouTube video
+      const ytId = videoId || extractYoutubeId(targetMediaUrl);
+      if (ytId) {
+        streamUrlToFetch = await resolveYouTubeDirectStream(ytId, quality);
       }
     }
 
