@@ -206,7 +206,7 @@ export default function VideoToolsPage() {
 
       // ── STEP 1: RESOLVE DIRECT STREAM URL ──
       if (isFb) {
-        // Facebook: check pre-extracted direct progressive MP4 CDN URL
+        // Facebook: use pre-extracted direct progressive MP4 CDN URL from videoData
         const opt = videoData.qualityOptions?.find((o) => o.quality === q);
         directDownloadUrl =
           opt?.directUrl ||
@@ -215,11 +215,9 @@ export default function VideoToolsPage() {
             : videoData.directSdUrl || videoData.directHdUrl) ||
           videoData.targetDownloadUrl;
 
-        // If direct FB URL is still missing or not a cdn url, fetch from resolver
+        // If still no direct CDN URL, re-extract from server
         if (!directDownloadUrl || !directDownloadUrl.includes("fbcdn.net")) {
-          toast.loading(`Extracting direct high-speed CDN stream for ${brand}...`, {
-            id: toastId,
-          });
+          toast.loading(`Extracting CDN stream for ${brand}...`, { id: toastId });
           const res = await fetch(
             `/api/tools/download?url=${encodeURIComponent(
               directDownloadUrl || videoData.canonicalUrl
@@ -231,33 +229,24 @@ export default function VideoToolsPage() {
           }
         }
       } else {
-        // YouTube: Use our ultra-fast multi-step polling resolver
-        toast.loading(`Resolving ${brand} ${q} direct stream...`, { id: toastId });
+        // ── YOUTUBE: Poll stream resolver (client-side, avoids Vercel timeout) ──
+        toast.loading(`Resolving ${brand} ${q} stream...`, { id: toastId });
         const initRes = await fetch(
-          `/api/tools/youtube-stream?id=${encodeURIComponent(
-            videoData.videoId
-          )}&quality=${q}`
+          `/api/tools/youtube-stream?id=${encodeURIComponent(videoData.videoId)}&quality=${q}`
         );
         const initData = await initRes.json();
 
         if (initData.downloadUrl) {
           directDownloadUrl = initData.downloadUrl;
         } else if (initData.progressUrl) {
-          // Client-side polling (each poll takes ~250ms, never hitting Vercel timeouts!)
           let resolved = false;
           for (let attempt = 1; attempt <= 25; attempt++) {
             await new Promise((r) => setTimeout(r, 1200));
             try {
-              toast.loading(
-                `Rendering ${q} video stream... ${
-                  initData.progress ? `${Math.min(95, attempt * 5 + 40)}%` : "Processing"
-                }`,
-                { id: toastId }
-              );
+              const pct = Math.min(95, attempt * 7 + 20);
+              toast.loading(`Processing ${q} stream... ${pct}%`, { id: toastId });
               const pollRes = await fetch(
-                `/api/tools/youtube-stream?progress_url=${encodeURIComponent(
-                  initData.progressUrl
-                )}`
+                `/api/tools/youtube-stream?progress_url=${encodeURIComponent(initData.progressUrl)}`
               );
               if (pollRes.ok) {
                 const pollData = await pollRes.json();
@@ -268,13 +257,11 @@ export default function VideoToolsPage() {
                 }
               }
             } catch (pollErr) {
-              console.warn("Poll attempt warning:", pollErr.message);
+              console.warn("Poll warning:", pollErr.message);
             }
           }
           if (!resolved && !directDownloadUrl) {
-            throw new Error(
-              "Video processing took too long. Please try standard resolution (720p or 480p)."
-            );
+            throw new Error("Stream processing timed out. Try 720p or 480p.");
           }
         } else {
           throw new Error(initData.error || "Could not resolve YouTube stream.");
@@ -282,210 +269,119 @@ export default function VideoToolsPage() {
       }
 
       if (!directDownloadUrl) {
-        throw new Error("Unable to obtain direct media stream URL.");
+        throw new Error("Unable to get a direct media stream URL.");
       }
 
-      // ── STEP 2: MULTI-TIER RESILIENT STORAGE TRANSFER ──
-      // Handles multi-hundred megabyte and gigabyte video files cleanly.
+      // ── STEP 2: TRIGGER THE ACTUAL DOWNLOAD ──
+      //
+      // KEY BUG FIX: After long async polling (7-17s), browser "user gesture"
+      // context expires. link.click() and showSaveFilePicker() get silently blocked —
+      // the toast shows success but NO download ever starts.
+      //
+      // Solution A – YouTube (savenow.to CDN):
+      //   window.location.href = cdnUrl needs NO user gesture at all.
+      //   CDN sends "Content-Disposition: attachment", so browser triggers download
+      //   instead of navigating away. Works on every browser, every size, full speed.
+      //
+      // Solution B – Facebook (fbcdn.net, CORS * enabled):
+      //   fetch() directly in-browser, stream chunks with live progress toast, then
+      //   assemble a blob and a.click() the blob URL. a.click() on a blob:// URL
+      //   always works even after awaits because it's same-origin.
 
-      // Tier 1: Modern File System Access API (Chrome, Edge, Opera, Android Chrome)
-      // Streams network bytes directly from CDN into disk with 0 memory buffering!
-      if (typeof window !== "undefined" && "showSaveFilePicker" in window) {
-        try {
-          const fileHandle = await window.showSaveFilePicker({
-            suggestedName: filename,
-            types: [
-              {
-                description: isAudio ? "MP3 Audio" : "MP4 Video",
-                accept: { [isAudio ? "audio/mpeg" : "video/mp4"]: [`.${ext}`] },
-              },
-            ],
-          });
-
-          toast.loading(`Saving ${filename} directly to storage...`, { id: toastId });
-          const writable = await fileHandle.createWritable();
-          const response = await fetch(directDownloadUrl);
-
-          if (!response.ok)
-            throw new Error(`HTTP ${response.status} from CDN stream`);
-
-          const reader = response.body.getReader();
-          const contentLength = +response.headers.get("Content-Length") || 0;
-          let received = 0;
-          let lastToastTime = Date.now();
-
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            await writable.write(value);
-            received += value.length;
-
-            const now = Date.now();
-            if (now - lastToastTime > 1500) {
-              lastToastTime = now;
-              const mbReceived = (received / (1024 * 1024)).toFixed(1);
-              if (contentLength > 0) {
-                const mbTotal = (contentLength / (1024 * 1024)).toFixed(1);
-                const pct = Math.round((received / contentLength) * 100);
-                toast.loading(
-                  `Saving to disk: ${mbReceived} MB / ${mbTotal} MB (${pct}%)...`,
-                  { id: toastId }
-                );
-              } else {
-                toast.loading(`Saving to disk: ${mbReceived} MB downloaded...`, {
-                  id: toastId,
-                });
-              }
-            }
-          }
-
-          await writable.close();
-          toast.success(`🎉 ${filename} saved completely to your storage!`, {
-            id: toastId,
-            duration: 6000,
-          });
-          setDownloading(false);
-          return;
-        } catch (pickerErr) {
-          if (pickerErr.name === "AbortError") {
-            // User intentionally pressed Cancel in the file picker dialog
-            toast.dismiss(toastId);
-            setDownloading(false);
-            return;
-          }
-          console.warn(
-            "File System Access API failed, falling back to direct browser download:",
-            pickerErr.message
-          );
-        }
-      }
-
-      // Tier 2: Direct Native Browser Download Manager via Anchor Tag
-      // YouTube direct CDN streams (savenow.to) include "Content-Disposition: attachment"
-      // Clicking the anchor triggers the native download manager directly from CDN
-      // with zero Vercel serverless proxy, zero RAM usage, and pause/resume support!
-      if (!isFb || directDownloadUrl.includes("attachment")) {
-        toast.loading(`Starting direct download from CDN...`, { id: toastId });
-        const link = document.createElement("a");
-        link.href = directDownloadUrl;
-        link.setAttribute("download", filename);
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-        link.style.display = "none";
-        document.body.appendChild(link);
-        link.click();
-
-        setTimeout(() => {
-          try {
-            document.body.removeChild(link);
-          } catch (e) {}
-        }, 5000);
-
-        toast.success(`🚀 Download started! Check your browser's Downloads folder.`, {
-          id: toastId,
-          duration: 6000,
-        });
-        setDownloading(false);
+      if (!isFb) {
+        // ── YOUTUBE: Navigate to CDN URL — Content-Disposition: attachment ──
+        toast.success(
+          `✅ Downloading ${q} video! Check your browser's Downloads bar.`,
+          { id: toastId, duration: 7000 }
+        );
+        await new Promise((r) => setTimeout(r, 350)); // let toast render
+        window.location.href = directDownloadUrl;
         return;
       }
 
-      // Tier 3: In-Browser Chunked Stream with live progress (for Facebook on Safari/iOS)
-      toast.loading(`Streaming ${brand} video to storage...`, { id: toastId });
-      const response = await fetch(directDownloadUrl);
-      if (!response.ok)
-        throw new Error(`CDN stream response status: ${response.status}`);
+      // ── FACEBOOK: Direct in-browser stream from fbcdn.net (CORS * enabled) ──
+      toast.loading(`Streaming ${brand} video... 0%`, { id: toastId });
 
+      const response = await fetch(directDownloadUrl, {
+        headers: { Accept: "video/mp4,video/*;q=0.9,*/*;q=0.8" },
+      });
+
+      if (!response.ok)
+        throw new Error(`CDN returned HTTP ${response.status}. Try HD or SD quality.`);
+
+      const contentLength = parseInt(response.headers.get("Content-Length") || "0", 10);
       const reader = response.body.getReader();
-      const contentLength = +response.headers.get("Content-Length") || 0;
       const chunks = [];
       let received = 0;
-      let lastToastTime = Date.now();
+      let lastToastMs = Date.now();
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
         chunks.push(value);
         received += value.length;
-
         const now = Date.now();
-        if (now - lastToastTime > 1500) {
-          lastToastTime = now;
-          const mbReceived = (received / (1024 * 1024)).toFixed(1);
+        if (now - lastToastMs > 800) {
+          lastToastMs = now;
+          const mb = (received / 1048576).toFixed(1);
           if (contentLength > 0) {
-            const mbTotal = (contentLength / (1024 * 1024)).toFixed(1);
+            const total = (contentLength / 1048576).toFixed(1);
             const pct = Math.round((received / contentLength) * 100);
-            toast.loading(
-              `Downloading: ${mbReceived} MB / ${mbTotal} MB (${pct}%)...`,
-              { id: toastId }
-            );
+            toast.loading(`Downloading ${brand}: ${mb} MB / ${total} MB (${pct}%)`, {
+              id: toastId,
+            });
           } else {
-            toast.loading(`Downloading: ${mbReceived} MB...`, { id: toastId });
+            toast.loading(`Downloading ${brand}: ${mb} MB...`, { id: toastId });
           }
         }
       }
 
-      const blob = new Blob(chunks, {
-        type: isAudio ? "audio/mpeg" : "video/mp4",
-      });
-      const blobUrl = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = blobUrl;
-      a.setAttribute("download", filename);
-      document.body.appendChild(a);
-      a.click();
-
+      // All bytes received — assemble blob and save (blob:// click always works after await)
+      const blob = new Blob(chunks, { type: isAudio ? "audio/mpeg" : "video/mp4" });
+      const blobUrl = URL.createObjectURL(blob);
+      const saveLink = document.createElement("a");
+      saveLink.href = blobUrl;
+      saveLink.download = filename;
+      saveLink.style.display = "none";
+      document.body.appendChild(saveLink);
+      saveLink.click();
       setTimeout(() => {
-        try {
-          document.body.removeChild(a);
-          window.URL.revokeObjectURL(blobUrl);
-        } catch (e) {}
-      }, 10000);
+        try { document.body.removeChild(saveLink); } catch (_) {}
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+      }, 1000);
 
-      toast.success(`🎉 ${brand} video saved to your Downloads folder!`, {
+      toast.success(`🎉 ${brand} video saved to Downloads!`, {
         id: toastId,
         duration: 6000,
       });
     } catch (err) {
-      console.error("Internal download error:", err);
-      // Fallback Tier 4: Server route with 307 redirect
+      console.error("Download engine error:", err);
+      // ── LAST-RESORT FALLBACK: server route with 307 CDN redirect ──
       try {
-        const fallbackUrl = `/api/tools/download?url=${encodeURIComponent(
-          videoData.canonicalUrl || videoData.url
-        )}&platform=${videoData.platform}&quality=${q}&title=${encodeURIComponent(
-          cleanTitle
-        )}&redirect=1`;
-        const link = document.createElement("a");
-        link.href = fallbackUrl;
-        link.setAttribute("download", filename);
-        link.style.display = "none";
-        document.body.appendChild(link);
-        link.click();
-        setTimeout(() => {
-          try {
-            document.body.removeChild(link);
-          } catch (e) {}
-        }, 5000);
-        toast.success(
-          `Download initiated! Check your browser's Downloads folder.`,
-          {
-            id: toastId,
-            duration: 6000,
-          }
-        );
+        toast.loading("Trying fallback download method...", { id: toastId });
+        const fallbackEndpoint = isFb
+          ? `/api/tools/download?url=${encodeURIComponent(
+              videoData.targetDownloadUrl || videoData.canonicalUrl
+            )}&pageUrl=${encodeURIComponent(
+              videoData.canonicalUrl
+            )}&platform=facebook&quality=${q}&title=${encodeURIComponent(cleanTitle)}&redirect=1`
+          : `/api/tools/download?id=${encodeURIComponent(
+              videoData.videoId
+            )}&platform=youtube&quality=${q}&title=${encodeURIComponent(cleanTitle)}&redirect=1`;
+        toast.success(`Download starting... Check your Downloads folder.`, {
+          id: toastId,
+          duration: 6000,
+        });
+        await new Promise((r) => setTimeout(r, 350));
+        window.location.href = fallbackEndpoint;
       } catch (fallbackErr) {
         toast.error(
-          err.message ||
-            "Failed to download video. Please try another resolution.",
-          {
-            id: toastId,
-            duration: 6000,
-          }
+          err.message || "Download failed. Please try a different resolution.",
+          { id: toastId, duration: 6000 }
         );
       }
     } finally {
-      setTimeout(() => {
-        setDownloading(false);
-      }, 1500);
+      setTimeout(() => setDownloading(false), 1500);
     }
   };
 
