@@ -11,7 +11,6 @@ import {
   Music,
   Video,
   Sparkles,
-  ExternalLink,
   Copy,
   Check,
   Smartphone,
@@ -22,7 +21,6 @@ import {
   ImageIcon,
   Moon,
   Sun,
-  Server,
   HardDrive,
   CheckCircle,
   Film,
@@ -37,7 +35,6 @@ export default function VideoToolsPage() {
   const [videoData, setVideoData] = useState(null);
   const [copied, setCopied] = useState(false);
   const [selectedQuality, setSelectedQuality] = useState("1080p");
-  const [selectedServerIndex, setSelectedServerIndex] = useState(0);
   const [activeDeviceTab, setActiveDeviceTab] = useState("pc");
   const [isDark, setIsDark] = useState(true);
 
@@ -219,20 +216,23 @@ export default function VideoToolsPage() {
       )}`;
     }
 
-    // Invisible trigger to prompt native browser download directly into device storage
-    const link = document.createElement("a");
-    link.href = streamEndpoint;
-    link.setAttribute("download", `${cleanTitle}.${ext}`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Use persistent hidden iframe channel to prevent Chrome premature link abortion ("Site wasn't available")
+    const frameId = "native-in-app-download-channel";
+    let frame = document.getElementById(frameId);
+    if (!frame) {
+      frame = document.createElement("iframe");
+      frame.id = frameId;
+      frame.style.display = "none";
+      document.body.appendChild(frame);
+    }
+    frame.src = streamEndpoint;
 
     setTimeout(() => {
       setDownloading(false);
-      toast.success(`${brand} download started with full sound! Saved in Downloads.`, {
+      toast.success(`${brand} download initiated! Saving directly to Downloads.`, {
         id: toastId,
       });
-    }, 4500);
+    }, 2500);
   };
 
   // Direct thumbnail download into computer / mobile device storage
@@ -257,24 +257,6 @@ export default function VideoToolsPage() {
         window.open(videoData.thumbnail, "_blank");
       }
       toast.success("Cover opened. Long-press or right-click to save!", { id: toastId });
-    }
-  };
-
-  // Optional external mirror launcher
-  const handleLaunchExternalMirror = (overrideUrl, serverName) => {
-    if (!videoData) return;
-    try {
-      navigator.clipboard.writeText(videoData.canonicalUrl);
-    } catch (e) {}
-
-    const targetUrl =
-      overrideUrl ||
-      videoData.downloadEngines?.[selectedServerIndex]?.url ||
-      videoData.downloadEngines?.[0]?.url;
-
-    if (targetUrl) {
-      window.open(targetUrl, "_blank", "noopener,noreferrer");
-      toast.success(`Opening external mirror: ${serverName || "Backup Portal"}`);
     }
   };
 
@@ -418,28 +400,32 @@ export default function VideoToolsPage() {
               onClick={() => setActivePlatform("facebook")}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
                 activePlatform === "facebook"
-                  ? "bg-blue-600 text-white shadow-md font-bold"
+                  ? isDark
+                    ? "bg-blue-600 text-white shadow-md font-bold"
+                    : "bg-blue-300 text-black shadow-md font-bold border border-blue-400"
                   : isDark
                   ? "text-slate-300 hover:text-blue-400"
                   : "text-slate-600 hover:text-blue-600"
               }`}
             >
-              <Facebook className="w-4 h-4 text-blue-400 group-hover:text-blue-300" />
-              <span>Facebook (Videos & Reels)</span>
+              <Facebook className={`w-4 h-4 ${activePlatform === "facebook" ? (isDark ? "text-white" : "text-black") : "text-blue-400 group-hover:text-blue-300"}`} />
+              <span className={activePlatform === "facebook" ? (isDark ? "text-white" : "text-black") : ""}>Facebook (Videos & Reels)</span>
             </button>
 
             <button
               onClick={() => setActivePlatform("youtube")}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
                 activePlatform === "youtube"
-                  ? "bg-red-600 text-white shadow-md font-bold"
+                  ? isDark
+                    ? "bg-red-600 text-white shadow-md font-bold"
+                    : "bg-red-300 text-black shadow-md font-bold border border-red-400"
                   : isDark
                   ? "text-slate-300 hover:text-red-400"
                   : "text-slate-600 hover:text-red-600"
               }`}
             >
-              <Youtube className="w-4 h-4 text-red-500" />
-              <span>YouTube (Videos & Shorts)</span>
+              <Youtube className={`w-4 h-4 ${activePlatform === "youtube" ? (isDark ? "text-white" : "text-black") : "text-red-500"}`} />
+              <span className={activePlatform === "youtube" ? (isDark ? "text-white" : "text-black") : ""}>YouTube (Videos & Shorts)</span>
             </button>
           </div>
         </motion.div>
@@ -671,18 +657,24 @@ export default function VideoToolsPage() {
                             className={`p-2 rounded-xl text-left border transition-all text-xs cursor-pointer ${
                               selectedQuality === opt.quality
                                 ? videoData.platform === "facebook"
-                                  ? "border-blue-500 bg-blue-500/15 text-text-primary shadow-[0_0_15px_rgba(24,119,242,0.2)]"
-                                  : "border-cyan bg-cyan/15 text-text-primary shadow-[0_0_15px_rgba(0,212,255,0.2)]"
+                                  ? isDark
+                                    ? "border-blue-500 bg-blue-500/25 text-white shadow-[0_0_15px_rgba(24,119,242,0.25)] font-bold"
+                                    : "border-blue-600 bg-blue-100 text-black shadow-sm font-bold"
+                                  : isDark
+                                  ? "border-cyan bg-cyan/25 text-white shadow-[0_0_15px_rgba(0,212,255,0.25)] font-bold"
+                                  : "border-cyan-600 bg-cyan-100 text-black shadow-sm font-bold"
                                 : "border-glass-border bg-surface/50 text-text-secondary hover:border-glass-border-hover hover:bg-surface/80"
                             }`}
                           >
-                            <div className="font-bold flex items-center gap-1.5">
+                            <div className={`font-bold flex items-center gap-1.5 ${selectedQuality === opt.quality ? (isDark ? "text-white" : "text-black") : ""}`}>
                               {opt.icon === "music" ? (
                                 <Music className="w-3.5 h-3.5 text-magenta" />
                               ) : (
                                 <Video
                                   className={`w-3.5 h-3.5 ${
-                                    videoData.platform === "facebook"
+                                    selectedQuality === opt.quality
+                                      ? isDark ? "text-white" : "text-black"
+                                      : videoData.platform === "facebook"
                                       ? "text-blue-400"
                                       : "text-cyan"
                                   }`}
@@ -690,7 +682,7 @@ export default function VideoToolsPage() {
                               )}
                               <span>{opt.label}</span>
                             </div>
-                            <span className="text-[10px] text-text-muted block mt-0.5">
+                            <span className={`text-[10px] block mt-0.5 ${selectedQuality === opt.quality ? (isDark ? "text-slate-200" : "text-slate-800 font-medium") : "text-text-muted"}`}>
                               {opt.note}
                             </span>
                           </button>
@@ -713,7 +705,9 @@ export default function VideoToolsPage() {
                     <button
                       onClick={() => handleInternalDownload(selectedQuality)}
                       disabled={downloading}
-                      className="flex-1 min-w-[220px] px-5 py-3.5 rounded-xl font-bold text-sm text-primary-foreground flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-cyan/30 cursor-pointer disabled:opacity-50"
+                      className={`flex-1 min-w-[220px] px-5 py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-cyan/30 cursor-pointer disabled:opacity-50 ${
+                        isDark ? "text-white" : "text-black"
+                      }`}
                       style={{
                         backgroundImage:
                           videoData.platform === "facebook"
@@ -763,47 +757,6 @@ export default function VideoToolsPage() {
                   </div>
                 </div>
               </div>
-
-              {/* ── Optional External Backup Mirrors ── */}
-              {videoData.downloadEngines && videoData.downloadEngines.length > 0 && (
-                <div className="mt-7 pt-6 border-t border-glass-border">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <Server className="w-4 h-4 text-text-muted" />
-                      <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-text-muted">
-                        Optional External Mirrors (Backup Only)
-                      </h3>
-                    </div>
-                    <span className="text-[11px] text-text-muted font-mono hidden sm:inline">
-                      Use only if you prefer an external portal
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {videoData.downloadEngines.slice(0, 3).map((engine) => (
-                      <div
-                        key={engine.id}
-                        className="p-3 rounded-xl border border-glass-border bg-surface/30 hover:bg-surface/60 transition-all flex items-center justify-between"
-                      >
-                        <div>
-                          <div className="font-bold text-xs text-text-primary">
-                            {engine.name}
-                          </div>
-                          <span className="text-[10px] text-text-muted">{engine.badge}</span>
-                        </div>
-
-                        <button
-                          onClick={() => handleLaunchExternalMirror(engine.url, engine.name)}
-                          className="py-1.5 px-2.5 rounded-lg text-xs font-medium bg-white/5 hover:bg-cyan/15 hover:text-cyan border border-glass-border transition-all flex items-center gap-1 cursor-pointer text-text-secondary"
-                        >
-                          <span>Open Mirror</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </motion.div>
           )}
         </AnimatePresence>

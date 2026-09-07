@@ -24,82 +24,107 @@ async function resolveRedirectUrl(rawUrl) {
 
 // Pure Node.js Facebook direct CDN extractor (works 100% on Vercel Serverless without Python or FFmpeg)
 async function scrapeFacebookDirect(targetUrl) {
-  try {
-    const res = await fetch(targetUrl, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      },
-      next: { revalidate: 0 },
-    });
+  // Generate candidate URLs to maximize resolution chance (watch URLs provide richest stream data)
+  const candidates = [targetUrl];
 
-    if (!res.ok) return null;
-    const text = await res.text();
-
-    // Clean unicode-escaped slashes (\/ -> /) and ampersands
-    const cleanText = text.replace(/\\\//g, "/").replace(/\\u0026/g, "&");
-
-    // Extract HD direct MP4 CDN URL
-    const hdMatch =
-      cleanText.match(/playable_url_quality_hd["']?\s*:\s*["']([^"']+)["']/i) ||
-      cleanText.match(/browser_native_hd_url["']?\s*:\s*["']([^"']+)["']/i) ||
-      cleanText.match(/hd_src_no_ratelimit["']?\s*:\s*["']([^"']+)["']/i) ||
-      cleanText.match(/hd_src["']?\s*:\s*["']([^"']+)["']/i);
-
-    // Extract SD direct MP4 CDN URL
-    const sdMatch =
-      cleanText.match(/playable_url["']?\s*:\s*["']([^"']+)["']/i) ||
-      cleanText.match(/browser_native_sd_url["']?\s*:\s*["']([^"']+)["']/i) ||
-      cleanText.match(/sd_src_no_ratelimit["']?\s*:\s*["']([^"']+)["']/i) ||
-      cleanText.match(/sd_src["']?\s*:\s*["']([^"']+)["']/i) ||
-      cleanText.match(/<meta[^>]*property=["']og:video:secure_url["'][^>]*content=["']([^"']+)["']/i) ||
-      cleanText.match(/<meta[^>]*property=["']og:video["'][^>]*content=["']([^"']+)["']/i);
-
-    const directHdUrl = hdMatch ? hdMatch[1] : null;
-    const directSdUrl = sdMatch ? sdMatch[1] : null;
-
-    // Extract Title
-    const ogTitleMatch =
-      cleanText.match(/<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["']/i) ||
-      cleanText.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:title["']/i);
-    const rawTitle = ogTitleMatch
-      ? ogTitleMatch[1]
-      : cleanText.match(/<title>([^<]+)<\/title>/i)?.[1] || "Facebook Video";
-
-    // Clean title from view counters if present
-    const title = rawTitle
-      .replace(/^[0-9.]+[MK]?\s*views\s*[·•&#xb7;]*\s*[0-9.]+[MK]?\s*reactions\s*\|\s*/i, "")
-      .replace(/\s*\|\s*Facebook$/i, "")
-      .trim() || "Facebook Video";
-
-    // Extract Thumbnail
-    const ogImgMatch =
-      cleanText.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i) ||
-      cleanText.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i);
-    const scontentMatch = cleanText.match(/https:\/\/scontent[^"'\s<>]+\.jpg[^"'\s<>]*/i);
-
-    const thumbnail = ogImgMatch ? ogImgMatch[1] : scontentMatch ? scontentMatch[0] : "";
-
-    // Extract Site / Author Name
-    const siteMatch =
-      cleanText.match(/<meta[^>]*property=["']og:site_name["'][^>]*content=["']([^"']+)["']/i) ||
-      cleanText.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:site_name["']/i);
-    const authorName = siteMatch ? siteMatch[1] : "Facebook Creator";
-
-    if (directHdUrl || directSdUrl || thumbnail || title !== "Facebook Video") {
-      return {
-        directHdUrl,
-        directSdUrl,
-        title,
-        thumbnail,
-        authorName,
-      };
-    }
-    return null;
-  } catch (e) {
-    return null;
+  const reelMatch = targetUrl.match(/(?:reel\/|videos\/|\?v=)(\d+)/i);
+  if (reelMatch && reelMatch[1]) {
+    const videoId = reelMatch[1];
+    candidates.push(`https://www.facebook.com/watch/?v=${videoId}`);
+    candidates.push(`https://mbasic.facebook.com/watch/?v=${videoId}`);
   }
+
+  for (const candidate of candidates) {
+    try {
+      const res = await fetch(candidate, {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.9",
+        },
+        next: { revalidate: 0 },
+      });
+
+      if (!res.ok) continue;
+      const text = await res.text();
+
+      // Clean unicode-escaped slashes (\/ -> /) and ampersands
+      const cleanText = text.replace(/\\\//g, "/").replace(/\\u0026/g, "&");
+
+      // Extract HD direct MP4 CDN URL
+      const hdMatch =
+        cleanText.match(/playable_url_quality_hd["']?\s*:\s*["']([^"']+)["']/i) ||
+        cleanText.match(/browser_native_hd_url["']?\s*:\s*["']([^"']+)["']/i) ||
+        cleanText.match(/hd_src_no_ratelimit["']?\s*:\s*["']([^"']+)["']/i) ||
+        cleanText.match(/hd_src["']?\s*:\s*["']([^"']+)["']/i);
+
+      // Extract SD direct MP4 CDN URL
+      const sdMatch =
+        cleanText.match(/playable_url["']?\s*:\s*["']([^"']+)["']/i) ||
+        cleanText.match(/browser_native_sd_url["']?\s*:\s*["']([^"']+)["']/i) ||
+        cleanText.match(/sd_src_no_ratelimit["']?\s*:\s*["']([^"']+)["']/i) ||
+        cleanText.match(/sd_src["']?\s*:\s*["']([^"']+)["']/i) ||
+        cleanText.match(/<meta[^>]*property=["']og:video:secure_url["'][^>]*content=["']([^"']+)["']/i) ||
+        cleanText.match(/<meta[^>]*property=["']og:video["'][^>]*content=["']([^"']+)["']/i);
+
+      let directHdUrl = hdMatch ? hdMatch[1] : null;
+      let directSdUrl = sdMatch ? sdMatch[1] : null;
+
+      // Fallback: look for direct MP4 CDN links if standard JSON keys weren't found
+      if (!directHdUrl && !directSdUrl) {
+        const mp4Matches = cleanText.match(/https:\/\/[^"'<>\s]*fbcdn\.net\/[^"'<>\s]+\.mp4[^"'<>\s]*/gi) || [];
+        for (const m of mp4Matches) {
+          if (m.includes("tag=hd") || m.includes("1280.hd")) {
+            directHdUrl = directHdUrl || m;
+          } else {
+            directSdUrl = directSdUrl || m;
+          }
+        }
+      }
+
+      // Extract Title
+      const ogTitleMatch =
+        cleanText.match(/<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["']/i) ||
+        cleanText.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:title["']/i);
+      const rawTitle = ogTitleMatch
+        ? ogTitleMatch[1]
+        : cleanText.match(/<title>([^<]+)<\/title>/i)?.[1] || "Facebook Video";
+
+      // Clean title from view counters if present
+      const title = rawTitle
+        .replace(/^[0-9.]+[MK]?\s*views\s*[·•&#xb7;]*\s*[0-9.]+[MK]?\s*reactions\s*\|\s*/i, "")
+        .replace(/\s*\|\s*Facebook$/i, "")
+        .trim() || "Facebook Video";
+
+      // Extract Thumbnail
+      const ogImgMatch =
+        cleanText.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i) ||
+        cleanText.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i);
+      const scontentMatch = cleanText.match(/https:\/\/scontent[^"'\s<>]+\.jpg[^"'\s<>]*/i);
+      const thumbnail = ogImgMatch ? ogImgMatch[1] : scontentMatch ? scontentMatch[0] : "";
+
+      // Extract Site / Author Name
+      const siteMatch =
+        cleanText.match(/<meta[^>]*property=["']og:site_name["'][^>]*content=["']([^"']+)["']/i) ||
+        cleanText.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:site_name["']/i);
+      const authorName = siteMatch ? siteMatch[1] : "Facebook Creator";
+
+      if (directHdUrl || directSdUrl) {
+        return {
+          directHdUrl,
+          directSdUrl,
+          title,
+          thumbnail,
+          authorName,
+        };
+      }
+    } catch (e) {
+      continue;
+    }
+  }
+
+  return null;
 }
 
 // Fallback yt-dlp JSON runner (only if python is available in local environment)
@@ -213,7 +238,6 @@ export async function POST(req) {
     const videoId = String(Date.now());
     const bestDownloadUrl = directHd || directSd || resolvedUrl;
 
-    // Quality options with direct CDN URLs
     const qualityOptions = [
       {
         label: "HD Video (Best)",
@@ -222,7 +246,6 @@ export async function POST(req) {
         directUrl: directHd || directSd || bestDownloadUrl,
         note: directHd ? "Full HD Direct Stream" : "Standard MP4 Stream",
         icon: "video",
-        engineIndex: 0,
       },
       {
         label: "SD Video (Standard)",
@@ -231,7 +254,6 @@ export async function POST(req) {
         directUrl: directSd || directHd || bestDownloadUrl,
         note: "Standard MP4 Stream",
         icon: "video",
-        engineIndex: 1,
       },
       {
         label: "MP3 Audio",
@@ -240,47 +262,6 @@ export async function POST(req) {
         directUrl: directSd || directHd || bestDownloadUrl,
         note: "Audio Stream",
         icon: "music",
-        engineIndex: 0,
-      },
-    ];
-
-    // External backup portals for Facebook
-    const downloadEngines = [
-      {
-        id: "snapsave",
-        name: "SnapSave Pro (FB HD)",
-        badge: "Recommended",
-        status: "Online",
-        desc: "Full HD 1080p, 2K & 4K Facebook Video & Reel downloader portal",
-        url: `https://snapsave.app/#url=${encodeURIComponent(resolvedUrl)}`,
-        direct: true,
-      },
-      {
-        id: "fdown",
-        name: "FDown Server 2",
-        badge: "Fast SD & HD",
-        status: "Online",
-        desc: "Fast Facebook video stream converter with multi-resolution support",
-        url: `https://fdown.net/download.php?url=${encodeURIComponent(resolvedUrl)}`,
-        direct: true,
-      },
-      {
-        id: "savefrom_fb",
-        name: "SaveFrom Facebook Server 3",
-        badge: "Global Classic",
-        status: "Online",
-        desc: "Worldwide reliable video & audio downloader portal",
-        url: `https://en.savefrom.net/387-facebook-video-downloader-64.html?url=${encodeURIComponent(resolvedUrl)}`,
-        direct: true,
-      },
-      {
-        id: "cobalt_fb",
-        name: "Cobalt Tools Server 4",
-        badge: "Ad-Free",
-        status: "Online",
-        desc: "Open-source, tracker-free media extractor",
-        url: "https://cobalt.tools/",
-        direct: false,
       },
     ];
 
@@ -300,7 +281,6 @@ export async function POST(req) {
         fallbackThumbnail: thumbnail,
         duration,
         qualityOptions,
-        downloadEngines,
       },
     });
   } catch (error) {

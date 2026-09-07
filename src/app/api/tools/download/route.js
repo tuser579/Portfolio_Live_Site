@@ -41,39 +41,68 @@ function runYtDlp(args) {
   });
 }
 
-// Pure Node.js direct Facebook stream extractor
+// Pure Node.js direct Facebook stream extractor (works 100% on Vercel Serverless)
 async function extractDirectFacebookCdn(targetUrl) {
-  try {
-    const res = await fetch(targetUrl, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      },
-    });
-    if (!res.ok) return null;
-    const text = await res.text();
-    const cleanText = text.replace(/\\\//g, "/").replace(/\\u0026/g, "&");
+  const candidates = [targetUrl];
 
-    const hdMatch =
-      cleanText.match(/playable_url_quality_hd["']?\s*:\s*["']([^"']+)["']/i) ||
-      cleanText.match(/browser_native_hd_url["']?\s*:\s*["']([^"']+)["']/i) ||
-      cleanText.match(/hd_src_no_ratelimit["']?\s*:\s*["']([^"']+)["']/i) ||
-      cleanText.match(/hd_src["']?\s*:\s*["']([^"']+)["']/i);
-
-    const sdMatch =
-      cleanText.match(/playable_url["']?\s*:\s*["']([^"']+)["']/i) ||
-      cleanText.match(/browser_native_sd_url["']?\s*:\s*["']([^"']+)["']/i) ||
-      cleanText.match(/sd_src_no_ratelimit["']?\s*:\s*["']([^"']+)["']/i) ||
-      cleanText.match(/sd_src["']?\s*:\s*["']([^"']+)["']/i);
-
-    return {
-      hd: hdMatch ? hdMatch[1] : null,
-      sd: sdMatch ? sdMatch[1] : null,
-    };
-  } catch (e) {
-    return null;
+  const reelMatch = targetUrl.match(/(?:reel\/|videos\/|\?v=)(\d+)/i);
+  if (reelMatch && reelMatch[1]) {
+    const videoId = reelMatch[1];
+    candidates.push(`https://www.facebook.com/watch/?v=${videoId}`);
+    candidates.push(`https://mbasic.facebook.com/watch/?v=${videoId}`);
   }
+
+  for (const candidate of candidates) {
+    try {
+      const res = await fetch(candidate, {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.9",
+        },
+      });
+      if (!res.ok) continue;
+      const text = await res.text();
+      const cleanText = text.replace(/\\\//g, "/").replace(/\\u0026/g, "&");
+
+      const hdMatch =
+        cleanText.match(/playable_url_quality_hd["']?\s*:\s*["']([^"']+)["']/i) ||
+        cleanText.match(/browser_native_hd_url["']?\s*:\s*["']([^"']+)["']/i) ||
+        cleanText.match(/hd_src_no_ratelimit["']?\s*:\s*["']([^"']+)["']/i) ||
+        cleanText.match(/hd_src["']?\s*:\s*["']([^"']+)["']/i);
+
+      const sdMatch =
+        cleanText.match(/playable_url["']?\s*:\s*["']([^"']+)["']/i) ||
+        cleanText.match(/browser_native_sd_url["']?\s*:\s*["']([^"']+)["']/i) ||
+        cleanText.match(/sd_src_no_ratelimit["']?\s*:\s*["']([^"']+)["']/i) ||
+        cleanText.match(/sd_src["']?\s*:\s*["']([^"']+)["']/i) ||
+        cleanText.match(/<meta[^>]*property=["']og:video:secure_url["'][^>]*content=["']([^"']+)["']/i) ||
+        cleanText.match(/<meta[^>]*property=["']og:video["'][^>]*content=["']([^"']+)["']/i);
+
+      let hd = hdMatch ? hdMatch[1] : null;
+      let sd = sdMatch ? sdMatch[1] : null;
+
+      if (!hd && !sd) {
+        const mp4Matches = cleanText.match(/https:\/\/[^"'<>\s]*fbcdn\.net\/[^"'<>\s]+\.mp4[^"'<>\s]*/gi) || [];
+        for (const m of mp4Matches) {
+          if (m.includes("tag=hd") || m.includes("1280.hd")) {
+            hd = hd || m;
+          } else {
+            sd = sd || m;
+          }
+        }
+      }
+
+      if (hd || sd) {
+        return { hd, sd };
+      }
+    } catch (e) {
+      continue;
+    }
+  }
+
+  return null;
 }
 
 export async function GET(req) {
@@ -287,16 +316,10 @@ export async function GET(req) {
       }
     }
 
-    // ── CASE 3: CLOUD FALLBACK ON SERVERLESS (VERCEL) ──
-    // If on Vercel where Python is absent, redirect directly to verified download engines rather than failing
-    if (videoId) {
-      const redirectEngineUrl = `https://ssyoutube.com/watch?v=${videoId}`;
-      return Response.redirect(redirectEngineUrl, 302);
-    }
-
+    // ── CASE 3: ERROR HANDLING WHEN STREAM CANNOT BE LOADED ──
     return new Response(
-      "Direct video stream could not be loaded. Please ensure the video is public or use one of the backup mirror servers below.",
-      { status: 502 }
+      "Direct video stream could not be loaded. Please ensure the video is public and accessible.",
+      { status: 400 }
     );
   } catch (error) {
     console.error("Native download stream error:", error);
