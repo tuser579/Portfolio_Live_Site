@@ -1,6 +1,7 @@
 import { execFile } from "child_process";
 import path from "path";
 import fs from "fs";
+import os from "os";
 import { Readable } from "stream";
 
 export const runtime = "nodejs";
@@ -13,6 +14,14 @@ function getFfmpegPath() {
     return directPath;
   }
   return "ffmpeg";
+}
+
+function checkPythonAvailable() {
+  return new Promise((resolve) => {
+    execFile("python", ["--version"], { timeout: 3000 }, (err) => {
+      resolve(!err);
+    });
+  });
 }
 
 function runYtDlp(args) {
@@ -30,6 +39,41 @@ function runYtDlp(args) {
       }
     );
   });
+}
+
+// Pure Node.js direct Facebook stream extractor
+async function extractDirectFacebookCdn(targetUrl) {
+  try {
+    const res = await fetch(targetUrl, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      },
+    });
+    if (!res.ok) return null;
+    const text = await res.text();
+    const cleanText = text.replace(/\\\//g, "/").replace(/\\u0026/g, "&");
+
+    const hdMatch =
+      cleanText.match(/playable_url_quality_hd["']?\s*:\s*["']([^"']+)["']/i) ||
+      cleanText.match(/browser_native_hd_url["']?\s*:\s*["']([^"']+)["']/i) ||
+      cleanText.match(/hd_src_no_ratelimit["']?\s*:\s*["']([^"']+)["']/i) ||
+      cleanText.match(/hd_src["']?\s*:\s*["']([^"']+)["']/i);
+
+    const sdMatch =
+      cleanText.match(/playable_url["']?\s*:\s*["']([^"']+)["']/i) ||
+      cleanText.match(/browser_native_sd_url["']?\s*:\s*["']([^"']+)["']/i) ||
+      cleanText.match(/sd_src_no_ratelimit["']?\s*:\s*["']([^"']+)["']/i) ||
+      cleanText.match(/sd_src["']?\s*:\s*["']([^"']+)["']/i);
+
+    return {
+      hd: hdMatch ? hdMatch[1] : null,
+      sd: sdMatch ? sdMatch[1] : null,
+    };
+  } catch (e) {
+    return null;
+  }
 }
 
 export async function GET(req) {
@@ -57,7 +101,7 @@ export async function GET(req) {
 
     const isFacebook =
       platformParam === "facebook" ||
-      /(?:facebook\.com|fb\.watch|fb\.gg|fb\.me)/i.test(targetMediaUrl);
+      /(?:facebook\.com|fb\.watch|fb\.gg|fb\.me|fbcdn\.net)/i.test(targetMediaUrl);
 
     const cleanTitle =
       rawTitle
@@ -70,156 +114,190 @@ export async function GET(req) {
     const contentType = isAudio ? "audio/mpeg" : "video/mp4";
     const filename = `${cleanTitle}.${ext}`;
 
-    // Dedicated workspace temp directory
-    const tempDir = path.join(process.cwd(), ".temp_downloads");
-    if (!fs.existsSync(tempDir)) {
-      fs.mkdirSync(tempDir, { recursive: true });
-    }
+    // ── CASE 1: DIRECT STREAMING FOR FACEBOOK (100% Serverless / Vercel Friendly) ──
+    // If targetMediaUrl is a direct CDN URL or Facebook page URL, stream directly via pure Node fetch
+    const isDirectCdn =
+      targetMediaUrl.includes("fbcdn.net") ||
+      targetMediaUrl.includes("googlevideo.com") ||
+      /\.(mp4|m4a|mp3)(\?|$)/i.test(targetMediaUrl);
 
-    const prefix = isFacebook ? "fb" : "yt";
-    tempFilePath = path.join(
-      tempDir,
-      `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}.${ext}`
-    );
+    let streamUrlToFetch = isDirectCdn ? targetMediaUrl : null;
 
-    const resolvedFfmpeg = getFfmpegPath();
-    let args = [];
-
-    if (isAudio) {
-      // High quality 320k MP3 audio extraction
-      args = [
-        "-m",
-        "yt_dlp",
-        "--ffmpeg-location",
-        resolvedFfmpeg,
-        "--js-runtimes",
-        "node",
-        "-x",
-        "--audio-format",
-        "mp3",
-        "--audio-quality",
-        "0",
-        "--no-playlist",
-        "-o",
-        tempFilePath,
-        targetMediaUrl,
-      ];
-    } else if (isFacebook) {
-      // Facebook Video with guaranteed universal AAC audio
-      let formatFilter = "bestvideo+bestaudio/best";
-      if (quality === "1080p" || quality === "hd") {
-        formatFilter = "bestvideo[height<=1080]+bestaudio/best[height<=1080]/bestvideo+bestaudio/best";
-      } else if (quality === "720p") {
-        formatFilter = "bestvideo[height<=720]+bestaudio/best[height<=720]/bestvideo+bestaudio/best";
-      } else if (quality === "480p" || quality === "sd") {
-        formatFilter = "bestvideo[height<=480]+bestaudio/best[height<=480]/best";
-      } else if (quality === "360p") {
-        formatFilter = "bestvideo[height<=360]+bestaudio/best[height<=360]/best";
+    if (!streamUrlToFetch && isFacebook) {
+      // Resolve direct CDN stream from Facebook page
+      const streams = await extractDirectFacebookCdn(targetMediaUrl);
+      if (streams) {
+        streamUrlToFetch = (quality === "1080p" || quality === "hd") ? (streams.hd || streams.sd) : (streams.sd || streams.hd);
       }
-
-      args = [
-        "-m",
-        "yt_dlp",
-        "--ffmpeg-location",
-        resolvedFfmpeg,
-        "-f",
-        formatFilter,
-        "--merge-output-format",
-        "mp4",
-        "--postprocessor-args",
-        "ffmpeg:-c:v copy -c:a aac -b:a 192k",
-        "--no-playlist",
-        "-o",
-        tempFilePath,
-        targetMediaUrl,
-      ];
-    } else {
-      // YouTube Video with AVC/MP4 priority & universal AAC muxing
-      let formatFilter =
-        "bestvideo[height<=720][vcodec^=avc]+bestaudio[acodec^=mp4a]/bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=720]+bestaudio/best";
-
-      if (quality === "1080p") {
-        formatFilter =
-          "bestvideo[height<=1080][vcodec^=avc]+bestaudio[acodec^=mp4a]/bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=1080]+bestaudio/best";
-      } else if (quality === "720p") {
-        formatFilter =
-          "bestvideo[height<=720][vcodec^=avc]+bestaudio[acodec^=mp4a]/bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=720]+bestaudio/best";
-      } else if (quality === "480p") {
-        formatFilter =
-          "bestvideo[height<=480][vcodec^=avc]+bestaudio[acodec^=mp4a]/bestvideo[height<=480][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=480]+bestaudio/best";
-      } else if (quality === "360p") {
-        formatFilter =
-          "bestvideo[height<=360][vcodec^=avc]+bestaudio[acodec^=mp4a]/bestvideo[height<=360][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=360]+bestaudio/best";
-      }
-
-      args = [
-        "-m",
-        "yt_dlp",
-        "--ffmpeg-location",
-        resolvedFfmpeg,
-        "--js-runtimes",
-        "node",
-        "-f",
-        formatFilter,
-        "--merge-output-format",
-        "mp4",
-        "--postprocessor-args",
-        "ffmpeg:-c:v copy -c:a aac -b:a 192k",
-        "--no-playlist",
-        "-o",
-        tempFilePath,
-        targetMediaUrl,
-      ];
     }
 
-    // Execute yt-dlp to download and mux audio + video together
-    await runYtDlp(args);
-
-    if (!fs.existsSync(tempFilePath)) {
-      throw new Error("Muxed media file was not found on server.");
-    }
-
-    const stat = fs.statSync(tempFilePath);
-    const nodeStream = fs.createReadStream(tempFilePath);
-
-    const cleanup = () => {
+    if (streamUrlToFetch) {
       try {
-        if (tempFilePath && fs.existsSync(tempFilePath)) {
-          fs.unlinkSync(tempFilePath);
-        }
-      } catch (e) {}
-      try {
-        if (tempFilePath) {
-          const dir = path.dirname(tempFilePath);
-          const base = path.basename(tempFilePath, path.extname(tempFilePath));
-          if (fs.existsSync(dir)) {
-            const files = fs.readdirSync(dir).filter((f) => f.startsWith(base));
-            for (const f of files) {
-              try {
-                fs.unlinkSync(path.join(dir, f));
-              } catch (_) {}
-            }
+        const cdnRes = await fetch(streamUrlToFetch, {
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+            "Accept": "*/*",
+          },
+        });
+
+        if (cdnRes.ok && cdnRes.body) {
+          const headers = new Headers();
+          headers.set("Content-Type", cdnRes.headers.get("content-type") || contentType);
+          if (cdnRes.headers.get("content-length")) {
+            headers.set("Content-Length", cdnRes.headers.get("content-length"));
           }
+          headers.set("Content-Disposition", `attachment; filename="${filename}"`);
+          headers.set("Cache-Control", "no-cache, no-store, must-revalidate");
+
+          return new Response(cdnRes.body, {
+            status: 200,
+            headers,
+          });
         }
-      } catch (e) {}
-    };
+      } catch (streamErr) {
+        console.warn("Direct CDN stream error, falling back:", streamErr.message);
+      }
+    }
 
-    nodeStream.on("close", cleanup);
-    nodeStream.on("error", cleanup);
+    // ── CASE 2: LOCAL ENVIRONMENT / VPS WITH PYTHON + FFMPEG ──
+    const hasPython = await checkPythonAvailable();
 
-    const webStream = Readable.toWeb(nodeStream);
+    if (hasPython) {
+      // Always use os.tmpdir() to guarantee write permissions on any OS (including /tmp on Linux/Vercel)
+      const tempDir = path.join(os.tmpdir(), "my_app_downloads");
+      if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
+      }
 
-    return new Response(webStream, {
-      status: 200,
-      headers: {
-        "Content-Type": contentType,
-        "Content-Length": stat.size.toString(),
-        "Content-Disposition": `attachment; filename="${filename}"`,
-        "Cache-Control": "no-cache, no-store, must-revalidate",
-        "Pragma": "no-cache",
-        "Expires": "0",
-      },
-    });
+      const prefix = isFacebook ? "fb" : "yt";
+      tempFilePath = path.join(
+        tempDir,
+        `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}.${ext}`
+      );
+
+      const resolvedFfmpeg = getFfmpegPath();
+      let args = [];
+
+      if (isAudio) {
+        args = [
+          "-m",
+          "yt_dlp",
+          "--ffmpeg-location",
+          resolvedFfmpeg,
+          "-x",
+          "--audio-format",
+          "mp3",
+          "--audio-quality",
+          "0",
+          "--no-playlist",
+          "-o",
+          tempFilePath,
+          targetMediaUrl,
+        ];
+      } else if (isFacebook) {
+        let formatFilter = "bestvideo+bestaudio/best";
+        if (quality === "1080p" || quality === "hd") {
+          formatFilter = "bestvideo[height<=1080]+bestaudio/best[height<=1080]/bestvideo+bestaudio/best";
+        } else if (quality === "720p") {
+          formatFilter = "bestvideo[height<=720]+bestaudio/best[height<=720]/bestvideo+bestaudio/best";
+        } else if (quality === "480p" || quality === "sd") {
+          formatFilter = "bestvideo[height<=480]+bestaudio/best[height<=480]/best";
+        }
+
+        args = [
+          "-m",
+          "yt_dlp",
+          "--ffmpeg-location",
+          resolvedFfmpeg,
+          "-f",
+          formatFilter,
+          "--merge-output-format",
+          "mp4",
+          "--postprocessor-args",
+          "ffmpeg:-c:v copy -c:a aac -b:a 192k",
+          "--no-playlist",
+          "-o",
+          tempFilePath,
+          targetMediaUrl,
+        ];
+      } else {
+        let formatFilter =
+          "bestvideo[height<=720][vcodec^=avc]+bestaudio[acodec^=mp4a]/bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=720]+bestaudio/best";
+
+        if (quality === "1080p") {
+          formatFilter =
+            "bestvideo[height<=1080][vcodec^=avc]+bestaudio[acodec^=mp4a]/bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=1080]+bestaudio/best";
+        } else if (quality === "720p") {
+          formatFilter =
+            "bestvideo[height<=720][vcodec^=avc]+bestaudio[acodec^=mp4a]/bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=720]+bestaudio/best";
+        } else if (quality === "480p") {
+          formatFilter =
+            "bestvideo[height<=480][vcodec^=avc]+bestaudio[acodec^=mp4a]/bestvideo[height<=480][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=480]+bestaudio/best";
+        }
+
+        args = [
+          "-m",
+          "yt_dlp",
+          "--ffmpeg-location",
+          resolvedFfmpeg,
+          "-f",
+          formatFilter,
+          "--merge-output-format",
+          "mp4",
+          "--postprocessor-args",
+          "ffmpeg:-c:v copy -c:a aac -b:a 192k",
+          "--no-playlist",
+          "-o",
+          tempFilePath,
+          targetMediaUrl,
+        ];
+      }
+
+      await runYtDlp(args);
+
+      if (fs.existsSync(tempFilePath)) {
+        const stat = fs.statSync(tempFilePath);
+        const nodeStream = fs.createReadStream(tempFilePath);
+
+        const cleanup = () => {
+          try {
+            if (tempFilePath && fs.existsSync(tempFilePath)) {
+              fs.unlinkSync(tempFilePath);
+            }
+          } catch (e) {}
+        };
+
+        nodeStream.on("close", cleanup);
+        nodeStream.on("error", cleanup);
+
+        const webStream = Readable.toWeb(nodeStream);
+
+        return new Response(webStream, {
+          status: 200,
+          headers: {
+            "Content-Type": contentType,
+            "Content-Length": stat.size.toString(),
+            "Content-Disposition": `attachment; filename="${filename}"`,
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
+          },
+        });
+      }
+    }
+
+    // ── CASE 3: CLOUD FALLBACK ON SERVERLESS (VERCEL) ──
+    // If on Vercel where Python is absent, redirect directly to verified download engines rather than failing
+    if (videoId) {
+      const redirectEngineUrl = `https://ssyoutube.com/watch?v=${videoId}`;
+      return Response.redirect(redirectEngineUrl, 302);
+    }
+
+    return new Response(
+      "Direct video stream could not be loaded. Please ensure the video is public or use one of the backup mirror servers below.",
+      { status: 502 }
+    );
   } catch (error) {
     console.error("Native download stream error:", error);
     try {

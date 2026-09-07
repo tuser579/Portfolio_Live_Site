@@ -203,7 +203,13 @@ export default function VideoToolsPage() {
     // Stream directly through your own Next.js backend!
     let streamEndpoint = "";
     if (isFb) {
-      const targetParam = videoData.targetDownloadUrl || videoData.canonicalUrl;
+      const opt = videoData.qualityOptions?.find((o) => o.quality === q);
+      const targetParam =
+        opt?.directUrl ||
+        videoData.directHdUrl ||
+        videoData.directSdUrl ||
+        videoData.targetDownloadUrl ||
+        videoData.canonicalUrl;
       streamEndpoint = `/api/tools/download?url=${encodeURIComponent(
         targetParam
       )}&platform=facebook&quality=${q}&title=${encodeURIComponent(cleanTitle)}`;
