@@ -336,3 +336,7 @@ export async function GET(req) {
     return new Response(`Download error: ${error.message}`, { status: 500 });
   }
 }
+
+export async function HEAD(req) {
+  return GET(req);
+}

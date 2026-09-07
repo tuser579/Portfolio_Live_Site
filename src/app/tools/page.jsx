@@ -282,11 +282,31 @@ export default function VideoToolsPage() {
         duration: 4000,
       });
     } catch (err) {
-      console.error("In-app download error:", err);
-      toast.error(err.message || "Could not download video. Please check your connection or link.", {
-        id: toastId,
-        duration: 5000,
-      });
+      console.warn("Direct stream fetch encountered error, triggering native browser download anchor:", err.message);
+      try {
+        const link = document.createElement("a");
+        link.href = streamEndpoint;
+        link.setAttribute("download", filename);
+        link.style.display = "none";
+        document.body.appendChild(link);
+        link.click();
+
+        setTimeout(() => {
+          try {
+            document.body.removeChild(link);
+          } catch (e) {}
+        }, 5000);
+
+        toast.success(`${brand} video download started! Check your Downloads folder.`, {
+          id: toastId,
+          duration: 4000,
+        });
+      } catch (fallbackErr) {
+        toast.error(err.message || "Could not download video. Please check your connection or link.", {
+          id: toastId,
+          duration: 5000,
+        });
+      }
     } finally {
       setDownloading(false);
     }
