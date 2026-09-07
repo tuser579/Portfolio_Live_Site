@@ -22,6 +22,22 @@ async function resolveRedirectUrl(rawUrl) {
   }
 }
 
+// Helper to clean escaped characters from Facebook CDN URLs
+function cleanCdnUrl(rawUrl) {
+  if (!rawUrl || typeof rawUrl !== "string") return null;
+  let url = rawUrl.trim();
+  try {
+    url = url
+      .replace(/\\u0026/g, "&")
+      .replace(/&amp;/g, "&")
+      .replace(/\\u00253D/gi, "=")
+      .replace(/\\u002526/gi, "&")
+      .replace(/\\\//g, "/")
+      .replace(/\\/g, "");
+  } catch (e) {}
+  return url;
+}
+
 // Pure Node.js Facebook direct CDN extractor (works 100% on Vercel Serverless without Python or FFmpeg)
 async function scrapeFacebookDirect(targetUrl) {
   // Generate candidate URLs to maximize resolution chance (watch URLs provide richest stream data)
@@ -31,6 +47,9 @@ async function scrapeFacebookDirect(targetUrl) {
   if (reelMatch && reelMatch[1]) {
     const videoId = reelMatch[1];
     candidates.push(`https://www.facebook.com/watch/?v=${videoId}`);
+    candidates.push(`https://m.facebook.com/watch/?v=${videoId}`);
+    candidates.push(`https://www.facebook.com/reel/${videoId}`);
+    candidates.push(`https://m.facebook.com/reel/${videoId}`);
     candidates.push(`https://mbasic.facebook.com/watch/?v=${videoId}`);
   }
 
@@ -39,7 +58,7 @@ async function scrapeFacebookDirect(targetUrl) {
       const res = await fetch(candidate, {
         headers: {
           "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
           "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
           "Accept-Language": "en-US,en;q=0.9",
         },
@@ -68,17 +87,18 @@ async function scrapeFacebookDirect(targetUrl) {
         cleanText.match(/<meta[^>]*property=["']og:video:secure_url["'][^>]*content=["']([^"']+)["']/i) ||
         cleanText.match(/<meta[^>]*property=["']og:video["'][^>]*content=["']([^"']+)["']/i);
 
-      let directHdUrl = hdMatch ? hdMatch[1] : null;
-      let directSdUrl = sdMatch ? sdMatch[1] : null;
+      let directHdUrl = cleanCdnUrl(hdMatch ? hdMatch[1] : null);
+      let directSdUrl = cleanCdnUrl(sdMatch ? sdMatch[1] : null);
 
       // Fallback: look for direct MP4 CDN links if standard JSON keys weren't found
       if (!directHdUrl && !directSdUrl) {
         const mp4Matches = cleanText.match(/https:\/\/[^"'<>\s]*fbcdn\.net\/[^"'<>\s]+\.mp4[^"'<>\s]*/gi) || [];
         for (const m of mp4Matches) {
-          if (m.includes("tag=hd") || m.includes("1280.hd")) {
-            directHdUrl = directHdUrl || m;
+          const cleaned = cleanCdnUrl(m);
+          if (cleaned.includes("tag=hd") || cleaned.includes("1280.hd")) {
+            directHdUrl = directHdUrl || cleaned;
           } else {
-            directSdUrl = directSdUrl || m;
+            directSdUrl = directSdUrl || cleaned;
           }
         }
       }
@@ -226,8 +246,8 @@ export async function POST(req) {
             const sdFmt = meta.formats.find(
               (f) => f.format_id === "sd" || (f.height && f.height < 720)
             );
-            if (hdFmt?.url) directHd = hdFmt.url;
-            if (sdFmt?.url) directSd = sdFmt.url;
+            if (hdFmt?.url) directHd = cleanCdnUrl(hdFmt.url);
+            if (sdFmt?.url) directSd = cleanCdnUrl(sdFmt.url);
           }
         }
       } catch (err) {

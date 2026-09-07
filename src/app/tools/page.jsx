@@ -208,8 +208,11 @@ export default function VideoToolsPage() {
         videoData.directSdUrl ||
         videoData.targetDownloadUrl ||
         videoData.canonicalUrl;
+      const canonicalPageUrl = videoData.canonicalUrl || videoData.url || "";
       streamEndpoint = `/api/tools/download?url=${encodeURIComponent(
         targetParam
+      )}&pageUrl=${encodeURIComponent(
+        canonicalPageUrl
       )}&platform=facebook&quality=${q}&title=${encodeURIComponent(cleanTitle)}`;
     } else {
       streamEndpoint = `/api/tools/download?id=${videoData.videoId}&platform=youtube&quality=${q}&title=${encodeURIComponent(
