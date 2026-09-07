@@ -7,6 +7,7 @@ import {
   FileCode2, Database, ShieldCheck, Zap, Layers, RefreshCw
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { safeCopyToClipboard } from "../../src/lib/clipboard.js";
 
 const SNIPPETS = [
   {
@@ -284,11 +285,15 @@ export default function CodeSnippetViewer() {
   const [isRunning, setIsRunning] = useState(false);
   const [showOutput, setShowOutput] = useState(false);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(activeSnippet.code);
-    setCopied(true);
-    toast.success("Code snippet copied to clipboard!");
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopy = async () => {
+    const success = await safeCopyToClipboard(activeSnippet.code);
+    if (success) {
+      setCopied(true);
+      toast.success("Code snippet copied to clipboard!");
+      setTimeout(() => setCopied(false), 2000);
+    } else {
+      toast.error("Could not copy snippet to clipboard");
+    }
   };
 
   const handleRunCode = () => {

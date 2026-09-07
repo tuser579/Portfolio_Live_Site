@@ -1,7 +1,7 @@
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
-import TerminalModal from "../../Components/ui/TerminalModal";
 import QuickConnectDrawer from "../../Components/ui/QuickConnectDrawer";
+import AskTuserAiDrawer from "../../Components/ui/AskTuserAiDrawer";
 
 export const metadata = {
     title:       "MD. Muttakiul Islam Tuser | MERN Stack Developer Portfolio",
@@ -65,8 +65,8 @@ export default function RootLayout({ children }) {
                         },
                     }}
                 />
-                <TerminalModal />
                 <QuickConnectDrawer />
+                <AskTuserAiDrawer />
             </body>
         </html>
     );

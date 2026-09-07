@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageSquare, Calendar, Phone, Mail, Clock, Check,
   Copy, ExternalLink, X, Send, Sparkles, MapPin, Coffee
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { safeCopyToClipboard } from "../../src/lib/clipboard";
 
 const PRESET_MESSAGES = [
   "Hi Tuser, I reviewed your portfolio and would like to discuss a Full-Stack Developer opportunity.",
@@ -35,8 +36,8 @@ export default function QuickConnectDrawer() {
     "Collaboration / General Inquiry",
   ];
 
-  const handleCopy = (text, field) => {
-    navigator.clipboard.writeText(text);
+  const handleCopy = async (text, field) => {
+    await safeCopyToClipboard(text);
     setCopiedField(field);
     toast.success(`Copied ${field} to clipboard!`);
     setTimeout(() => setCopiedField(null), 2000);
@@ -48,9 +49,12 @@ export default function QuickConnectDrawer() {
     toast.success("Opening WhatsApp chat...");
   };
 
-  const handleOpenEmail = (type = "gmail") => {
+  const handleOpenEmail = async (type = "gmail") => {
     const subject = encodeURIComponent(emailSubject.trim() || "Full-Stack Developer Role / Project Inquiry");
     const body = encodeURIComponent(emailBody.trim());
+
+    // Safely copy email to clipboard while window is focused before opening new tab
+    await safeCopyToClipboard(EMAIL);
 
     if (type === "gmail") {
       const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${EMAIL}&su=${subject}&body=${body}`;
@@ -60,10 +64,22 @@ export default function QuickConnectDrawer() {
       window.location.href = `mailto:${EMAIL}?subject=${subject}&body=${body}`;
       toast.success("Opening default Mail App...");
     }
-
-    // Auto copy email to clipboard as backup
-    navigator.clipboard.writeText(EMAIL);
   };
+
+  // Lock background body scroll when drawer is open
+  useEffect(() => {
+    if (isOpen) {
+      const originalBodyOverflow = document.body.style.overflow;
+      const originalHtmlOverflow = document.documentElement.style.overflow;
+      document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
+
+      return () => {
+        document.body.style.overflow = originalBodyOverflow;
+        document.documentElement.style.overflow = originalHtmlOverflow;
+      };
+    }
+  }, [isOpen]);
 
   return (
     <>
