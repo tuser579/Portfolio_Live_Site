@@ -245,6 +245,38 @@ export async function GET(req) {
 
     if (streamUrlToFetch) {
       streamUrlToFetch = cleanCdnUrl(streamUrlToFetch);
+
+      // Support JSON resolution for clients
+      if (
+        searchParams.get("format") === "json" ||
+        searchParams.get("resolve") === "1" ||
+        req.headers.get("accept")?.includes("application/json")
+      ) {
+        return Response.json({
+          success: true,
+          downloadUrl: streamUrlToFetch,
+          filename,
+          contentType,
+          isFacebook,
+        });
+      }
+
+      // ── CRITICAL FIX FOR LARGE VIDEOS ON VERCEL ──
+      // Vercel Serverless Functions terminate with 504 Timeout at 10-15 seconds.
+      // For large videos (50MB - 500MB+), proxying bytes through serverless kills the stream midway.
+      // By returning a 307 Temporary Redirect, the browser's native download manager directly
+      // streams the full file from the high-speed CDN without any timeout or data corruption!
+      const shouldRedirect =
+        searchParams.get("redirect") === "1" ||
+        Boolean(process.env.VERCEL) ||
+        streamUrlToFetch.includes("savenow.to") ||
+        streamUrlToFetch.includes("affadaffa.com") ||
+        req.headers.get("x-vercel-id");
+
+      if (shouldRedirect) {
+        return Response.redirect(streamUrlToFetch, 307);
+      }
+
       try {
         const fetchHeaders = {
           "User-Agent":

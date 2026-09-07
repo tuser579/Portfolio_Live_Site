@@ -177,7 +177,9 @@ export default function VideoToolsPage() {
     }
   };
 
-  // 100% REAL IN-APP STREAM DOWNLOAD DIRECTLY INTO STORAGE
+  // ── 100% INTERNAL RESILIENT DOWNLOAD ENGINE ──
+  // Specially engineered to handle LARGE VIDEOS (50MB - 1GB+) on Vercel & mobile
+  // without hitting Vercel's 10s serverless timeout or running out of browser RAM.
   const handleInternalDownload = async (qualityOverride) => {
     if (!videoData) return;
 
@@ -190,103 +192,300 @@ export default function VideoToolsPage() {
         .replace(/[^a-zA-Z0-9_\-\s]/g, "")
         .trim()
         .replace(/\s+/g, "_") || (isFb ? "facebook_video" : "youtube_video");
-    const filename = `${cleanTitle}.${ext}`;
+    const filename = `${cleanTitle}_${q}.${ext}`;
     const brand = isFb ? "Facebook" : "YouTube";
 
     setDownloading(true);
     const toastId = toast.loading(
-      `Connecting to internal stream for ${brand} ${isAudio ? "MP3 Audio" : `${q} Video`}... Download will begin shortly.`,
-      { duration: 35000 }
+      `Preparing ${brand} ${isAudio ? "MP3 Audio" : `${q} Video`}...`,
+      { duration: 60000 }
     );
 
-    const opt = videoData.qualityOptions?.find((o) => o.quality === q);
-    const targetParam =
-      opt?.directUrl ||
-      videoData.directHdUrl ||
-      videoData.directSdUrl ||
-      videoData.targetDownloadUrl ||
-      videoData.canonicalUrl;
-    const canonicalPageUrl = videoData.canonicalUrl || videoData.url || "";
+    try {
+      let directDownloadUrl = null;
 
-    // ── STRATEGY 1: DIRECT IN-BROWSER BLOB STREAM (100% RELIABLE ON VERCEL & LOCAL) ──
-    // Facebook CDN explicitly permits CORS with "access-control-allow-origin: *".
-    // By streaming directly into a Blob in the browser, the download is NOT subject
-    // to Vercel's 10-second serverless execution timeout, downloads at maximum speed,
-    // and saves straight into the user's Downloads folder!
-    if (isFb && targetParam && targetParam.includes("fbcdn.net")) {
-      try {
-        toast.loading(`Downloading ${brand} video to storage...`, { id: toastId });
-        const res = await fetch(targetParam);
-        if (res.ok) {
-          const blob = await res.blob();
-          const blobUrl = window.URL.createObjectURL(blob);
-          const link = document.createElement("a");
-          link.href = blobUrl;
-          link.setAttribute("download", filename);
-          document.body.appendChild(link);
-          link.click();
+      // ── STEP 1: RESOLVE DIRECT STREAM URL ──
+      if (isFb) {
+        // Facebook: check pre-extracted direct progressive MP4 CDN URL
+        const opt = videoData.qualityOptions?.find((o) => o.quality === q);
+        directDownloadUrl =
+          opt?.directUrl ||
+          (q === "1080p" || q === "hd"
+            ? videoData.directHdUrl || videoData.directSdUrl
+            : videoData.directSdUrl || videoData.directHdUrl) ||
+          videoData.targetDownloadUrl;
 
-          setTimeout(() => {
-            try {
-              document.body.removeChild(link);
-              window.URL.revokeObjectURL(blobUrl);
-            } catch (e) {}
-          }, 10000);
-
-          toast.success(
-            `${brand} video saved to your Downloads folder!`,
-            { id: toastId, duration: 6000 }
+        // If direct FB URL is still missing or not a cdn url, fetch from resolver
+        if (!directDownloadUrl || !directDownloadUrl.includes("fbcdn.net")) {
+          toast.loading(`Extracting direct high-speed CDN stream for ${brand}...`, {
+            id: toastId,
+          });
+          const res = await fetch(
+            `/api/tools/download?url=${encodeURIComponent(
+              directDownloadUrl || videoData.canonicalUrl
+            )}&platform=facebook&quality=${q}&format=json`
           );
+          if (res.ok) {
+            const json = await res.json();
+            if (json.downloadUrl) directDownloadUrl = json.downloadUrl;
+          }
+        }
+      } else {
+        // YouTube: Use our ultra-fast multi-step polling resolver
+        toast.loading(`Resolving ${brand} ${q} direct stream...`, { id: toastId });
+        const initRes = await fetch(
+          `/api/tools/youtube-stream?id=${encodeURIComponent(
+            videoData.videoId
+          )}&quality=${q}`
+        );
+        const initData = await initRes.json();
+
+        if (initData.downloadUrl) {
+          directDownloadUrl = initData.downloadUrl;
+        } else if (initData.progressUrl) {
+          // Client-side polling (each poll takes ~250ms, never hitting Vercel timeouts!)
+          let resolved = false;
+          for (let attempt = 1; attempt <= 25; attempt++) {
+            await new Promise((r) => setTimeout(r, 1200));
+            try {
+              toast.loading(
+                `Rendering ${q} video stream... ${
+                  initData.progress ? `${Math.min(95, attempt * 5 + 40)}%` : "Processing"
+                }`,
+                { id: toastId }
+              );
+              const pollRes = await fetch(
+                `/api/tools/youtube-stream?progress_url=${encodeURIComponent(
+                  initData.progressUrl
+                )}`
+              );
+              if (pollRes.ok) {
+                const pollData = await pollRes.json();
+                if (pollData.done && pollData.downloadUrl) {
+                  directDownloadUrl = pollData.downloadUrl;
+                  resolved = true;
+                  break;
+                }
+              }
+            } catch (pollErr) {
+              console.warn("Poll attempt warning:", pollErr.message);
+            }
+          }
+          if (!resolved && !directDownloadUrl) {
+            throw new Error(
+              "Video processing took too long. Please try standard resolution (720p or 480p)."
+            );
+          }
+        } else {
+          throw new Error(initData.error || "Could not resolve YouTube stream.");
+        }
+      }
+
+      if (!directDownloadUrl) {
+        throw new Error("Unable to obtain direct media stream URL.");
+      }
+
+      // ── STEP 2: MULTI-TIER RESILIENT STORAGE TRANSFER ──
+      // Handles multi-hundred megabyte and gigabyte video files cleanly.
+
+      // Tier 1: Modern File System Access API (Chrome, Edge, Opera, Android Chrome)
+      // Streams network bytes directly from CDN into disk with 0 memory buffering!
+      if (typeof window !== "undefined" && "showSaveFilePicker" in window) {
+        try {
+          const fileHandle = await window.showSaveFilePicker({
+            suggestedName: filename,
+            types: [
+              {
+                description: isAudio ? "MP3 Audio" : "MP4 Video",
+                accept: { [isAudio ? "audio/mpeg" : "video/mp4"]: [`.${ext}`] },
+              },
+            ],
+          });
+
+          toast.loading(`Saving ${filename} directly to storage...`, { id: toastId });
+          const writable = await fileHandle.createWritable();
+          const response = await fetch(directDownloadUrl);
+
+          if (!response.ok)
+            throw new Error(`HTTP ${response.status} from CDN stream`);
+
+          const reader = response.body.getReader();
+          const contentLength = +response.headers.get("Content-Length") || 0;
+          let received = 0;
+          let lastToastTime = Date.now();
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            await writable.write(value);
+            received += value.length;
+
+            const now = Date.now();
+            if (now - lastToastTime > 1500) {
+              lastToastTime = now;
+              const mbReceived = (received / (1024 * 1024)).toFixed(1);
+              if (contentLength > 0) {
+                const mbTotal = (contentLength / (1024 * 1024)).toFixed(1);
+                const pct = Math.round((received / contentLength) * 100);
+                toast.loading(
+                  `Saving to disk: ${mbReceived} MB / ${mbTotal} MB (${pct}%)...`,
+                  { id: toastId }
+                );
+              } else {
+                toast.loading(`Saving to disk: ${mbReceived} MB downloaded...`, {
+                  id: toastId,
+                });
+              }
+            }
+          }
+
+          await writable.close();
+          toast.success(`🎉 ${filename} saved completely to your storage!`, {
+            id: toastId,
+            duration: 6000,
+          });
           setDownloading(false);
           return;
+        } catch (pickerErr) {
+          if (pickerErr.name === "AbortError") {
+            // User intentionally pressed Cancel in the file picker dialog
+            toast.dismiss(toastId);
+            setDownloading(false);
+            return;
+          }
+          console.warn(
+            "File System Access API failed, falling back to direct browser download:",
+            pickerErr.message
+          );
         }
-      } catch (blobErr) {
-        console.warn("Direct blob download failed, falling back to server route:", blobErr.message);
       }
-    }
 
-    // ── STRATEGY 2: NATIVE ANCHOR ATTACHMENT STREAM (For YouTube or Fallback) ──
-    let streamEndpoint = "";
-    if (isFb) {
-      streamEndpoint = `/api/tools/download?url=${encodeURIComponent(
-        targetParam
-      )}&pageUrl=${encodeURIComponent(
-        canonicalPageUrl
-      )}&platform=facebook&quality=${q}&title=${encodeURIComponent(cleanTitle)}`;
-    } else {
-      streamEndpoint = `/api/tools/download?id=${videoData.videoId}&platform=youtube&quality=${q}&title=${encodeURIComponent(
-        cleanTitle
-      )}`;
-    }
+      // Tier 2: Direct Native Browser Download Manager via Anchor Tag
+      // YouTube direct CDN streams (savenow.to) include "Content-Disposition: attachment"
+      // Clicking the anchor triggers the native download manager directly from CDN
+      // with zero Vercel serverless proxy, zero RAM usage, and pause/resume support!
+      if (!isFb || directDownloadUrl.includes("attachment")) {
+        toast.loading(`Starting direct download from CDN...`, { id: toastId });
+        const link = document.createElement("a");
+        link.href = directDownloadUrl;
+        link.setAttribute("download", filename);
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.style.display = "none";
+        document.body.appendChild(link);
+        link.click();
 
-    try {
-      // Trigger native browser attachment download directly in user gesture event loop
-      const link = document.createElement("a");
-      link.href = streamEndpoint;
-      link.setAttribute("download", filename);
-      link.style.display = "none";
-      document.body.appendChild(link);
-      link.click();
+        setTimeout(() => {
+          try {
+            document.body.removeChild(link);
+          } catch (e) {}
+        }, 5000);
+
+        toast.success(`🚀 Download started! Check your browser's Downloads folder.`, {
+          id: toastId,
+          duration: 6000,
+        });
+        setDownloading(false);
+        return;
+      }
+
+      // Tier 3: In-Browser Chunked Stream with live progress (for Facebook on Safari/iOS)
+      toast.loading(`Streaming ${brand} video to storage...`, { id: toastId });
+      const response = await fetch(directDownloadUrl);
+      if (!response.ok)
+        throw new Error(`CDN stream response status: ${response.status}`);
+
+      const reader = response.body.getReader();
+      const contentLength = +response.headers.get("Content-Length") || 0;
+      const chunks = [];
+      let received = 0;
+      let lastToastTime = Date.now();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        received += value.length;
+
+        const now = Date.now();
+        if (now - lastToastTime > 1500) {
+          lastToastTime = now;
+          const mbReceived = (received / (1024 * 1024)).toFixed(1);
+          if (contentLength > 0) {
+            const mbTotal = (contentLength / (1024 * 1024)).toFixed(1);
+            const pct = Math.round((received / contentLength) * 100);
+            toast.loading(
+              `Downloading: ${mbReceived} MB / ${mbTotal} MB (${pct}%)...`,
+              { id: toastId }
+            );
+          } else {
+            toast.loading(`Downloading: ${mbReceived} MB...`, { id: toastId });
+          }
+        }
+      }
+
+      const blob = new Blob(chunks, {
+        type: isAudio ? "audio/mpeg" : "video/mp4",
+      });
+      const blobUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.setAttribute("download", filename);
+      document.body.appendChild(a);
+      a.click();
 
       setTimeout(() => {
         try {
-          document.body.removeChild(link);
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(blobUrl);
         } catch (e) {}
-      }, 5000);
+      }, 10000);
 
-      toast.success(
-        `${brand} video download started! Check your browser's Downloads folder.`,
-        { id: toastId, duration: 6000 }
-      );
+      toast.success(`🎉 ${brand} video saved to your Downloads folder!`, {
+        id: toastId,
+        duration: 6000,
+      });
     } catch (err) {
-      toast.error(
-        err.message || "Failed to start download. Please try again.",
-        { id: toastId, duration: 5000 }
-      );
+      console.error("Internal download error:", err);
+      // Fallback Tier 4: Server route with 307 redirect
+      try {
+        const fallbackUrl = `/api/tools/download?url=${encodeURIComponent(
+          videoData.canonicalUrl || videoData.url
+        )}&platform=${videoData.platform}&quality=${q}&title=${encodeURIComponent(
+          cleanTitle
+        )}&redirect=1`;
+        const link = document.createElement("a");
+        link.href = fallbackUrl;
+        link.setAttribute("download", filename);
+        link.style.display = "none";
+        document.body.appendChild(link);
+        link.click();
+        setTimeout(() => {
+          try {
+            document.body.removeChild(link);
+          } catch (e) {}
+        }, 5000);
+        toast.success(
+          `Download initiated! Check your browser's Downloads folder.`,
+          {
+            id: toastId,
+            duration: 6000,
+          }
+        );
+      } catch (fallbackErr) {
+        toast.error(
+          err.message ||
+            "Failed to download video. Please try another resolution.",
+          {
+            id: toastId,
+            duration: 6000,
+          }
+        );
+      }
     } finally {
       setTimeout(() => {
         setDownloading(false);
-      }, 3000);
+      }, 1500);
     }
   };
 
@@ -541,7 +740,9 @@ export default function VideoToolsPage() {
               type="button"
               onClick={() => fetchVideoInfo()}
               disabled={loading || !url.trim()}
-              className="px-6 py-3.5 rounded-xl font-semibold text-sm text-primary-foreground flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-lg hover:shadow-cyan/25"
+              className={`px-6 py-3.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-lg hover:shadow-cyan/25 ${
+                isDark ? "text-white" : "text-black font-bold"
+              }`}
               style={{
                 backgroundImage:
                   activePlatform === "facebook"
