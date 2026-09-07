@@ -178,6 +178,8 @@ export async function GET(req) {
           }
           headers.set("Content-Disposition", `attachment; filename="${filename}"`);
           headers.set("Cache-Control", "no-cache, no-store, must-revalidate");
+          headers.set("Access-Control-Allow-Origin", "*");
+          headers.set("Access-Control-Expose-Headers", "Content-Length, Content-Disposition, Content-Type");
 
           return new Response(cdnRes.body, {
             status: 200,
@@ -308,6 +310,8 @@ export async function GET(req) {
             "Content-Type": contentType,
             "Content-Length": stat.size.toString(),
             "Content-Disposition": `attachment; filename="${filename}"`,
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Expose-Headers": "Content-Length, Content-Disposition, Content-Type",
             "Cache-Control": "no-cache, no-store, must-revalidate",
             "Pragma": "no-cache",
             "Expires": "0",

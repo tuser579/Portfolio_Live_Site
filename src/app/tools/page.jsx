@@ -177,8 +177,8 @@ export default function VideoToolsPage() {
     }
   };
 
-  // 100% OWN INTERNAL NATIVE IN-APP DOWNLOAD (NO EXTERNAL REDIRECT!)
-  const handleInternalDownload = (qualityOverride) => {
+  // 100% REAL IN-APP STREAM DOWNLOAD DIRECTLY INTO STORAGE
+  const handleInternalDownload = async (qualityOverride) => {
     if (!videoData) return;
 
     const q = qualityOverride || selectedQuality;
@@ -190,49 +190,106 @@ export default function VideoToolsPage() {
         .replace(/[^a-zA-Z0-9_\-\s]/g, "")
         .trim()
         .replace(/\s+/g, "_") || (isFb ? "facebook_video" : "youtube_video");
+    const filename = `${cleanTitle}.${ext}`;
+    const brand = isFb ? "Facebook" : "YouTube";
 
     setDownloading(true);
-    const brand = isFb ? "Facebook" : "YouTube";
     const toastId = toast.loading(
-      `Muxing with full sound & streaming ${brand} ${isAudio ? "MP3 Audio" : `${q} Video`} into your storage...`
+      `Connecting to internal stream for ${brand} ${isAudio ? "MP3 Audio" : `${q} Video`}...`
     );
 
-    // Stream directly through your own Next.js backend!
-    let streamEndpoint = "";
-    if (isFb) {
-      const opt = videoData.qualityOptions?.find((o) => o.quality === q);
-      const targetParam =
-        opt?.directUrl ||
-        videoData.directHdUrl ||
-        videoData.directSdUrl ||
-        videoData.targetDownloadUrl ||
-        videoData.canonicalUrl;
-      streamEndpoint = `/api/tools/download?url=${encodeURIComponent(
-        targetParam
-      )}&platform=facebook&quality=${q}&title=${encodeURIComponent(cleanTitle)}`;
-    } else {
-      streamEndpoint = `/api/tools/download?id=${videoData.videoId}&platform=youtube&quality=${q}&title=${encodeURIComponent(
-        cleanTitle
-      )}`;
-    }
+    try {
+      // Build internal endpoint
+      let streamEndpoint = "";
+      if (isFb) {
+        const opt = videoData.qualityOptions?.find((o) => o.quality === q);
+        const targetParam =
+          opt?.directUrl ||
+          videoData.directHdUrl ||
+          videoData.directSdUrl ||
+          videoData.targetDownloadUrl ||
+          videoData.canonicalUrl;
+        streamEndpoint = `/api/tools/download?url=${encodeURIComponent(
+          targetParam
+        )}&platform=facebook&quality=${q}&title=${encodeURIComponent(cleanTitle)}`;
+      } else {
+        streamEndpoint = `/api/tools/download?id=${videoData.videoId}&platform=youtube&quality=${q}&title=${encodeURIComponent(
+          cleanTitle
+        )}`;
+      }
 
-    // Use persistent hidden iframe channel to prevent Chrome premature link abortion ("Site wasn't available")
-    const frameId = "native-in-app-download-channel";
-    let frame = document.getElementById(frameId);
-    if (!frame) {
-      frame = document.createElement("iframe");
-      frame.id = frameId;
-      frame.style.display = "none";
-      document.body.appendChild(frame);
-    }
-    frame.src = streamEndpoint;
+      // Fetch the binary stream directly through our internal API
+      const res = await fetch(streamEndpoint);
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(errText || `Download request failed with status ${res.status}`);
+      }
 
-    setTimeout(() => {
-      setDownloading(false);
-      toast.success(`${brand} download initiated! Saving directly to Downloads.`, {
+      // Read stream chunks and report real download progress
+      const contentLengthHeader = res.headers.get("content-length");
+      const contentLength = contentLengthHeader ? parseInt(contentLengthHeader, 10) : 0;
+
+      const reader = res.body?.getReader();
+      const chunks = [];
+      let receivedBytes = 0;
+      let lastUpdate = Date.now();
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+          receivedBytes += value.length;
+
+          const now = Date.now();
+          if (now - lastUpdate > 250) {
+            lastUpdate = now;
+            const mb = (receivedBytes / (1024 * 1024)).toFixed(1);
+            if (contentLength > 0) {
+              const pct = Math.min(99, Math.round((receivedBytes / contentLength) * 100));
+              toast.loading(`Downloading ${brand} video: ${pct}% (${mb} MB)...`, { id: toastId });
+            } else {
+              toast.loading(`Downloading ${brand} video: ${mb} MB...`, { id: toastId });
+            }
+          }
+        }
+      } else {
+        const blobData = await res.blob();
+        chunks.push(blobData);
+      }
+
+      const mimeType = res.headers.get("content-type") || (isAudio ? "audio/mpeg" : "video/mp4");
+      const blob = chunks[0] instanceof Blob ? chunks[0] : new Blob(chunks, { type: mimeType });
+      const blobUrl = window.URL.createObjectURL(blob);
+
+      // Trigger the browser's native file saving dialog into Downloads folder
+      const a = document.createElement("a");
+      a.style.display = "none";
+      a.href = blobUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+
+      setTimeout(() => {
+        window.URL.revokeObjectURL(blobUrl);
+        try {
+          document.body.removeChild(a);
+        } catch (e) {}
+      }, 5000);
+
+      toast.success(`${brand} video saved directly to your Downloads folder!`, {
         id: toastId,
+        duration: 4000,
       });
-    }, 2500);
+    } catch (err) {
+      console.error("In-app download error:", err);
+      toast.error(err.message || "Could not download video. Please check your connection or link.", {
+        id: toastId,
+        duration: 5000,
+      });
+    } finally {
+      setDownloading(false);
+    }
   };
 
   // Direct thumbnail download into computer / mobile device storage
