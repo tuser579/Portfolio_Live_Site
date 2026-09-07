@@ -7,16 +7,41 @@ export const dynamic = "force-dynamic";
 // Expand redirects for fb.watch or share links
 async function resolveRedirectUrl(rawUrl) {
   try {
-    const response = await fetch(rawUrl, {
+    const res = await fetch(rawUrl, {
       method: "GET",
-      redirect: "follow",
+      redirect: "manual",
       headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "User-Agent": "facebookexternalhit/1.1",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
       },
     });
-    return response.url || rawUrl;
+
+    const location = res.headers.get("location");
+    if (location) {
+      if (location.includes("next=")) {
+        try {
+          const u = new URL(location, "https://www.facebook.com");
+          const next = u.searchParams.get("next");
+          if (next) return decodeURIComponent(next);
+        } catch (e) {}
+      }
+      return location;
+    }
+
+    if (res.url && res.url !== rawUrl) {
+      return res.url;
+    }
+
+    const followRes = await fetch(rawUrl, {
+      method: "GET",
+      redirect: "follow",
+      headers: {
+        "User-Agent": "facebookexternalhit/1.1",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      },
+    });
+
+    return followRes.url || rawUrl;
   } catch (e) {
     return rawUrl;
   }
@@ -40,18 +65,19 @@ function cleanCdnUrl(rawUrl) {
 
 // Pure Node.js Facebook direct CDN extractor (works 100% on Vercel Serverless without Python or FFmpeg)
 async function scrapeFacebookDirect(targetUrl) {
-  // Generate candidate URLs to maximize resolution chance (watch URLs provide richest stream data)
-  const candidates = [targetUrl];
+  // Generate candidate URLs to maximize resolution chance
+  const candidates = [];
 
-  const reelMatch = targetUrl.match(/(?:reel\/|videos\/|\?v=)(\d+)/i);
+  const reelMatch = targetUrl.match(/(?:reel\/|videos\/|\?v=|share\/v\/|share\/r\/)([a-zA-Z0-9_-]+)/i);
   if (reelMatch && reelMatch[1]) {
     const videoId = reelMatch[1];
-    candidates.push(`https://www.facebook.com/watch/?v=${videoId}`);
+    // Put mobile watch first because it reliably yields direct progressive MP4 streams
     candidates.push(`https://m.facebook.com/watch/?v=${videoId}`);
-    candidates.push(`https://www.facebook.com/reel/${videoId}`);
+    candidates.push(`https://www.facebook.com/watch/?v=${videoId}`);
     candidates.push(`https://m.facebook.com/reel/${videoId}`);
-    candidates.push(`https://mbasic.facebook.com/watch/?v=${videoId}`);
+    candidates.push(`https://www.facebook.com/reel/${videoId}`);
   }
+  candidates.push(targetUrl);
 
   for (const candidate of candidates) {
     try {
@@ -90,16 +116,22 @@ async function scrapeFacebookDirect(targetUrl) {
       let directHdUrl = cleanCdnUrl(hdMatch ? hdMatch[1] : null);
       let directSdUrl = cleanCdnUrl(sdMatch ? sdMatch[1] : null);
 
-      // Fallback: look for direct MP4 CDN links if standard JSON keys weren't found
+      // Fallback: look for direct progressive MP4 CDN links
       if (!directHdUrl && !directSdUrl) {
-        const mp4Matches = cleanText.match(/https:\/\/[^"'<>\s]*fbcdn\.net\/[^"'<>\s]+\.mp4[^"'<>\s]*/gi) || [];
-        for (const m of mp4Matches) {
-          const cleaned = cleanCdnUrl(m);
-          if (cleaned.includes("tag=hd") || cleaned.includes("1280.hd")) {
-            directHdUrl = directHdUrl || cleaned;
-          } else {
-            directSdUrl = directSdUrl || cleaned;
-          }
+        const mp4Matches = cleanText.match(/https:\/\/[^"'<>\s\\]*fbcdn\.net\/[^"'<>\s\\]*\.mp4[^"'<>\s\\]*/gi) || [];
+        const progressiveMatches = mp4Matches.filter((m) => m.includes("progressive"));
+        if (progressiveMatches.length > 0) {
+          directHdUrl = cleanCdnUrl(
+            progressiveMatches.find((m) => m.includes("720p") || m.includes("1080p") || m.includes("hd")) ||
+              progressiveMatches[0]
+          );
+          directSdUrl = cleanCdnUrl(
+            progressiveMatches.find((m) => m.includes("360p") || m.includes("480p") || m.includes("sd")) ||
+              progressiveMatches[progressiveMatches.length - 1]
+          );
+        } else if (mp4Matches.length > 0) {
+          directHdUrl = cleanCdnUrl(mp4Matches[0]);
+          directSdUrl = cleanCdnUrl(mp4Matches[mp4Matches.length - 1]);
         }
       }
 
@@ -111,11 +143,20 @@ async function scrapeFacebookDirect(targetUrl) {
         ? ogTitleMatch[1]
         : cleanText.match(/<title>([^<]+)<\/title>/i)?.[1] || "Facebook Video";
 
+      // Decode HTML entities in title
+      const decodedRawTitle = rawTitle
+        .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+        .replace(/&#([0-9]+);/g, (_, dec) => String.fromCharCode(parseInt(dec, 10)))
+        .replace(/&amp;/g, "&")
+        .replace(/&quot;/g, '"')
+        .replace(/&apos;/g, "'");
+
       // Clean title from view counters if present
-      const title = rawTitle
-        .replace(/^[0-9.]+[MK]?\s*views\s*[·•&#xb7;]*\s*[0-9.]+[MK]?\s*reactions\s*\|\s*/i, "")
-        .replace(/\s*\|\s*Facebook$/i, "")
-        .trim() || "Facebook Video";
+      const title =
+        decodedRawTitle
+          .replace(/^[0-9.]+[MK]?\s*views\s*[·•&#xb7;]*\s*[0-9.]+[MK]?\s*reactions\s*\|\s*/i, "")
+          .replace(/\s*\|\s*Facebook$/i, "")
+          .trim() || "Facebook Video";
 
       // Extract Thumbnail
       const ogImgMatch =
@@ -128,12 +169,15 @@ async function scrapeFacebookDirect(targetUrl) {
       const siteMatch =
         cleanText.match(/<meta[^>]*property=["']og:site_name["'][^>]*content=["']([^"']+)["']/i) ||
         cleanText.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:site_name["']/i);
-      const authorName = siteMatch ? siteMatch[1] : "Facebook Creator";
+      const rawAuthor = siteMatch ? siteMatch[1] : "Facebook Creator";
+      const authorName = rawAuthor
+        .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+        .replace(/&#([0-9]+);/g, (_, dec) => String.fromCharCode(parseInt(dec, 10)));
 
       if (directHdUrl || directSdUrl) {
         return {
-          directHdUrl,
-          directSdUrl,
+          directHdUrl: directHdUrl || directSdUrl,
+          directSdUrl: directSdUrl || directHdUrl,
           title,
           thumbnail,
           authorName,

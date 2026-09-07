@@ -178,7 +178,7 @@ export default function VideoToolsPage() {
   };
 
   // 100% REAL IN-APP STREAM DOWNLOAD DIRECTLY INTO STORAGE
-  const handleInternalDownload = (qualityOverride) => {
+  const handleInternalDownload = async (qualityOverride) => {
     if (!videoData) return;
 
     const q = qualityOverride || selectedQuality;
@@ -196,19 +196,58 @@ export default function VideoToolsPage() {
     setDownloading(true);
     const toastId = toast.loading(
       `Connecting to internal stream for ${brand} ${isAudio ? "MP3 Audio" : `${q} Video`}... Download will begin shortly.`,
-      { duration: 25000 }
+      { duration: 35000 }
     );
 
+    const opt = videoData.qualityOptions?.find((o) => o.quality === q);
+    const targetParam =
+      opt?.directUrl ||
+      videoData.directHdUrl ||
+      videoData.directSdUrl ||
+      videoData.targetDownloadUrl ||
+      videoData.canonicalUrl;
+    const canonicalPageUrl = videoData.canonicalUrl || videoData.url || "";
+
+    // ── STRATEGY 1: DIRECT IN-BROWSER BLOB STREAM (100% RELIABLE ON VERCEL & LOCAL) ──
+    // Facebook CDN explicitly permits CORS with "access-control-allow-origin: *".
+    // By streaming directly into a Blob in the browser, the download is NOT subject
+    // to Vercel's 10-second serverless execution timeout, downloads at maximum speed,
+    // and saves straight into the user's Downloads folder!
+    if (isFb && targetParam && targetParam.includes("fbcdn.net")) {
+      try {
+        toast.loading(`Downloading ${brand} video to storage...`, { id: toastId });
+        const res = await fetch(targetParam);
+        if (res.ok) {
+          const blob = await res.blob();
+          const blobUrl = window.URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = blobUrl;
+          link.setAttribute("download", filename);
+          document.body.appendChild(link);
+          link.click();
+
+          setTimeout(() => {
+            try {
+              document.body.removeChild(link);
+              window.URL.revokeObjectURL(blobUrl);
+            } catch (e) {}
+          }, 10000);
+
+          toast.success(
+            `${brand} video saved to your Downloads folder!`,
+            { id: toastId, duration: 6000 }
+          );
+          setDownloading(false);
+          return;
+        }
+      } catch (blobErr) {
+        console.warn("Direct blob download failed, falling back to server route:", blobErr.message);
+      }
+    }
+
+    // ── STRATEGY 2: NATIVE ANCHOR ATTACHMENT STREAM (For YouTube or Fallback) ──
     let streamEndpoint = "";
     if (isFb) {
-      const opt = videoData.qualityOptions?.find((o) => o.quality === q);
-      const targetParam =
-        opt?.directUrl ||
-        videoData.directHdUrl ||
-        videoData.directSdUrl ||
-        videoData.targetDownloadUrl ||
-        videoData.canonicalUrl;
-      const canonicalPageUrl = videoData.canonicalUrl || videoData.url || "";
       streamEndpoint = `/api/tools/download?url=${encodeURIComponent(
         targetParam
       )}&pageUrl=${encodeURIComponent(
